@@ -4,14 +4,15 @@ Usage: python create_test_data.py
 """
 import os
 import django
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
-django.setup()
-
 from users.models import User
 from events.models import Event
 from django.utils import timezone
 from datetime import timedelta
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
+django.setup()
+
+
 
 print("🚀 Creating test data...")
 
