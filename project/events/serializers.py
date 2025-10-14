@@ -4,7 +4,7 @@ from users.serializers import UserSerializer
 
 
 class EventSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели Event"""
+    """Serializer for Event model"""
     organizer = UserSerializer(read_only=True)
     participants = UserSerializer(many=True, read_only=True)
     participants_count = serializers.SerializerMethodField()
@@ -20,11 +20,11 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'organizer', 'created_at', 'updated_at']
     
     def get_participants_count(self, obj):
-        """Возвращает количество участников"""
+        """Returns the number of participants"""
         return obj.participants.count()
     
     def get_is_registered(self, obj):
-        """Проверяет, зарегистрирован ли текущий пользователь на мероприятие"""
+        """Checks if the current user is registered for the event"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return obj.participants.filter(id=request.user.id).exists()
@@ -32,22 +32,22 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventCreateSerializer(serializers.ModelSerializer):
-    """Сериализатор для создания мероприятия"""
+    """Serializer for creating event"""
     
     class Meta:
         model = Event
         fields = ['title', 'description', 'date']
     
     def validate_date(self, value):
-        """Проверяет, что дата мероприятия в будущем"""
+        """Validates that the event date is in the future"""
         from django.utils import timezone
         if value <= timezone.now():
-            raise serializers.ValidationError('Дата мероприятия должна быть в будущем')
+            raise serializers.ValidationError('Event date must be in the future')
         return value
 
 
 class EventListSerializer(serializers.ModelSerializer):
-    """Упрощенный сериализатор для списка мероприятий"""
+    """Simplified serializer for event list"""
     organizer = UserSerializer(read_only=True)
     participants_count = serializers.SerializerMethodField()
     is_registered = serializers.SerializerMethodField()
