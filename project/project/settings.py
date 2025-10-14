@@ -18,16 +18,16 @@ import environ
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Инициализация django-environ
+# Initialize django-environ
 env = environ.Env(
     DEBUG=(bool, False)
 )
 
-# Чтение .env файла
+# Read .env file
 try:
     environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
 except FileNotFoundError:
-    pass  # .env файл опционален
+    pass  # .env file is optional
 
 
 # Quick-start development settings - unsuitable for production
@@ -150,10 +150,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Кастомная модель пользователя
+# Custom user model
 AUTH_USER_MODEL = 'users.User'
 
-# REST Framework настройки
+# REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -165,7 +165,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-# JWT настройки
+# JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -188,6 +188,6 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# CORS настройки
+# CORS settings
 CORS_ALLOW_ALL_ORIGINS = env('CORS_ALLOW_ALL_ORIGINS', default=True)
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])

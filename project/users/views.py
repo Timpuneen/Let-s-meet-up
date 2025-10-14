@@ -9,7 +9,7 @@ from .serializers import UserSerializer, UserRegistrationSerializer, LoginSerial
 class SignupView(APIView):
     """
     POST /api/auth/signup/
-    Регистрация нового пользователя
+    Register a new user
     """
     permission_classes = [AllowAny]
     
@@ -18,7 +18,7 @@ class SignupView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             
-            # Генерация JWT токенов
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             
             return Response({
@@ -35,7 +35,7 @@ class SignupView(APIView):
 class LoginView(APIView):
     """
     POST /api/auth/login/
-    Аутентификация пользователя
+    User authentication
     """
     permission_classes = [AllowAny]
     
@@ -44,7 +44,7 @@ class LoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             
-            # Генерация JWT токенов
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             
             return Response({
@@ -61,7 +61,7 @@ class LoginView(APIView):
 class MeView(generics.RetrieveAPIView):
     """
     GET /api/auth/me/
-    Получение информации о текущем пользователе
+    Get current user information
     """
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer

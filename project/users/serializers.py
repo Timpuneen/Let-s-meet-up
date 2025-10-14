@@ -4,7 +4,7 @@ from .models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели User"""
+    """Serializer for User model"""
     
     class Meta:
         model = User
@@ -13,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Сериализатор для регистрации нового пользователя"""
+    """Serializer for new user registration"""
     password = serializers.CharField(write_only=True, min_length=6)
     
     class Meta:
@@ -21,7 +21,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ['email', 'name', 'password']
     
     def create(self, validated_data):
-        """Создание пользователя с хешированием пароля"""
+        """Create user with password hashing"""
         user = User.objects.create_user(
             email=validated_data['email'],
             name=validated_data['name'],
@@ -31,23 +31,23 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    """Сериализатор для входа пользователя"""
+    """Serializer for user login"""
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     
     def validate(self, data):
-        """Проверка учетных данных"""
+        """Validate credentials"""
         email = data.get('email')
         password = data.get('password')
         
         if email and password:
             user = authenticate(email=email, password=password)
             if not user:
-                raise serializers.ValidationError('Неверные учетные данные')
+                raise serializers.ValidationError('Invalid credentials')
             if not user.is_active:
-                raise serializers.ValidationError('Аккаунт деактивирован')
+                raise serializers.ValidationError('Account is deactivated')
             data['user'] = user
         else:
-            raise serializers.ValidationError('Email и пароль обязательны')
+            raise serializers.ValidationError('Email and password are required')
         
         return data
