@@ -1,9 +1,13 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
+from abstracts.models import AbstractSoftDeletableModel
 
 class UserManager(BaseUserManager):
     """Manager for working with user model"""
+    
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
     
     def create_user(self, email, name, password=None):
         """Create a regular user"""
@@ -24,13 +28,20 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+class AllUsersManager(BaseUserManager):
+    """Manager that returns all users, including soft-deleted ones"""
+    
+    def get_queryset(self):
+        return super().get_queryset()
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel):
     """
-    Custom user model
+    Custom user model with soft delete functionality.
     - email: unique email (used for login)
     - name: user name
     - password: hashed password (automatically through set_password)
+    - is_deleted: soft delete flag (inherited)
+    - deleted_at: timestamp of deletion (inherited)
     """
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
@@ -39,6 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)
     
     objects = UserManager()
+    all_objects = AllUsersManager()
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']

@@ -1,15 +1,19 @@
 from django.db import models
 from django.conf import settings
 
+from abstracts.models import AbstractSoftDeletableModel
 
-class Event(models.Model):
+
+class Event(AbstractSoftDeletableModel):
     """
-    Event model
+    Event model with soft delete functionality.
     - title: event title
     - description: description
     - date: event date and time
     - organizer: organizer (ForeignKey to User)
     - participants: participants (ManyToMany to User)
+    - is_deleted: soft delete flag (inherited)
+    - deleted_at: timestamp of deletion (inherited)
     """
     title = models.CharField(max_length=255, verbose_name='Title')
     description = models.TextField(verbose_name='Description')
