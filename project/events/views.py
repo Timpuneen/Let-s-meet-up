@@ -3,13 +3,51 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from .models import Event
 from .serializers import EventSerializer, EventCreateSerializer, EventListSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Events'],
+        summary='List all upcoming events',
+        description='Returns a paginated list of all upcoming events.',
+    ),
+    retrieve=extend_schema(
+        tags=['Events'],
+        summary='Get event details',
+        description='Returns detailed information about a specific event.',
+    ),
+    create=extend_schema(
+        tags=['Events'],
+        summary='Create new event',
+        description='Create a new event. The authenticated user will be set as the organizer.',
+        request=EventCreateSerializer,
+    ),
+    update=extend_schema(
+        tags=['Events'],
+        summary='Update event',
+        description='Update all fields of an event. Only the organizer can update the event.',
+    ),
+    partial_update=extend_schema(
+        tags=['Events'],
+        summary='Partially update event',
+        description='Update specific fields of an event. Only the organizer can update the event.',
+    ),
+    destroy=extend_schema(
+        tags=['Events'],
+        summary='Delete event',
+        description='Delete an event. Only the organizer can delete the event.',
+    ),
+)
 class EventViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for working with events
+    Complete CRUD operations for events with registration functionality.
+    
+    Provides endpoints for listing, creating, updating, and deleting events,
+    as well as custom actions for event registration management.
     """
     permission_classes = [IsAuthenticatedOrReadOnly]
     
@@ -30,10 +68,19 @@ class EventViewSet(viewsets.ModelViewSet):
         """Automatically assigns current user as organizer"""
         serializer.save(organizer=self.request.user)
     
+    @extend_schema(
+        tags=['Events'],
+        summary='Register for event',
+        description='Register the authenticated user as a participant for the specified event.',
+        responses={
+            200: OpenApiResponse(response=EventSerializer, description='Successfully registered'),
+            400: OpenApiResponse(description='Cannot register (already registered or own event)'),
+            401: OpenApiResponse(description='Authentication required'),
+        },
+    )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def register(self, request, pk=None):
         """
-        POST /api/events/{id}/register/
         Register for event
         """
         event = self.get_object()
@@ -58,10 +105,19 @@ class EventViewSet(viewsets.ModelViewSet):
         serializer = EventSerializer(event, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @extend_schema(
+        tags=['Events'],
+        summary='Cancel event registration',
+        description='Remove the authenticated user from the list of participants for the specified event.',
+        responses={
+            200: OpenApiResponse(response=EventSerializer, description='Successfully cancelled registration'),
+            400: OpenApiResponse(description='Not registered for this event'),
+            401: OpenApiResponse(description='Authentication required'),
+        },
+    )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def cancel_registration(self, request, pk=None):
         """
-        POST /api/events/{id}/cancel_registration/
         Cancel event registration
         """
         event = self.get_object()
@@ -79,20 +135,36 @@ class EventViewSet(viewsets.ModelViewSet):
         serializer = EventSerializer(event, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @extend_schema(
+        tags=['Events'],
+        summary='Get my organized events',
+        description='Returns a list of all events organized by the authenticated user.',
+        responses={
+            200: OpenApiResponse(response=EventListSerializer(many=True), description='List of organized events'),
+            401: OpenApiResponse(description='Authentication required'),
+        },
+    )
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_organized(self, request):
         """
-        GET /api/events/my_organized/
         List of events organized by current user
         """
         events = Event.objects.filter(organizer=request.user).select_related('organizer').prefetch_related('participants')
         serializer = EventListSerializer(events, many=True, context={'request': request})
         return Response(serializer.data)
     
+    @extend_schema(
+        tags=['Events'],
+        summary='Get my registered events',
+        description='Returns a list of all events the authenticated user is registered for as a participant.',
+        responses={
+            200: OpenApiResponse(response=EventListSerializer(many=True), description='List of registered events'),
+            401: OpenApiResponse(description='Authentication required'),
+        },
+    )
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def my_registered(self, request):
         """
-        GET /api/events/my_registered/
         List of events the current user is registered for
         """
         events = Event.objects.filter(participants=request.user).select_related('organizer').prefetch_related('participants')
