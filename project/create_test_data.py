@@ -6,7 +6,7 @@ Usage:
 
 This script:
 1. Initializes the Django environment.
-2. Deletes all existing User and Event objects.
+2. Deletes all existing User and Event objects (including soft-deleted).
 3. Creates a set of test users and events.
 4. Registers participants for each event.
 5. Displays summary statistics and test credentials.
@@ -29,10 +29,19 @@ def main():
     """Main function to create test data."""
     print("Creating test data...")
 
-    # Clear existing data
+    # Clear existing data (including soft-deleted records)
     print("\nClearing existing data...")
-    User.objects.all().delete()
-    Event.objects.all().delete()
+    print("   Deleting all events (including soft-deleted)...")
+    event_count = Event.all_objects.count()
+    for event in Event.all_objects.all():
+        event.hard_delete()
+    print(f"   Deleted {event_count} events")
+    
+    print("   Deleting all users (including soft-deleted)...")
+    user_count = User.all_objects.count()
+    for user in User.all_objects.all():
+        user.hard_delete()
+    print(f"   Deleted {user_count} users")
 
     # Create users
     print("\nCreating users...")
@@ -108,8 +117,8 @@ def main():
 
     # Display statistics
     print("\nSummary statistics:")
-    print(f"   Users: {User.objects.count()}")
-    print(f"   Events: {Event.objects.count()}")
+    print(f"   Active users: {User.objects.count()}")
+    print(f"   Active events: {Event.objects.count()}")
     total_registrations = sum(e.participants.count() for e in Event.objects.all())
     print(f"   Total registrations: {total_registrations}")
 
