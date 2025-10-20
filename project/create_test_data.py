@@ -11,7 +11,8 @@ This script:
 4. Registers participants for each event.
 5. Displays summary statistics and test credentials.
 """
-
+from users.models import User
+from events.models import Event
 import os
 import django
 from django.utils import timezone
@@ -21,8 +22,7 @@ from datetime import timedelta
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
 django.setup()
 
-from users.models import User
-from events.models import Event
+
 
 
 def main():
@@ -50,6 +50,22 @@ def main():
         {'email': 'maria@example.com', 'name': 'Maria Petrova', 'password': 'password123'},
         {'email': 'alex@example.com', 'name': 'Alexey Sidorov', 'password': 'password123'},
         {'email': 'elena@example.com', 'name': 'Elena Smirnova', 'password': 'password123'},
+        {'email': 'madina@example.com', 'name': 'Madina Kadyrova', 'password': '1234Qwerty!'},
+        {'email': 'sultan@example.com', 'name': 'Sultan Kadyrov', 'password': '1234Qwerty!'},
+        {'email': 'azamat@example.com', 'name': 'Azamat Kadyrov', 'password': '1234Qwerty!'},
+        {'email': 'diana@example.com', 'name': 'Diana Kadyrova', 'password': '1234Qwerty!'},
+        {'email': 'azamat@example.com', 'name': 'Azamat Kadyrov', 'password': '1234Qwerty!'},
+        {'email': 'arslan@example.com', 'name': 'Arslan Kenesov', 'password': '1234Qwerty!'},
+        {'email': 'kairat@example.com', 'name': 'Kairat Kenesov', 'password': '1234Qwerty!'},
+        {'email': 'maxim@example.com', 'name': 'Maxim Kenesov', 'password': '1234Qwerty!'},
+        {'email': 'vlad@example.com', 'name': 'Vlad Kozhuhov', 'password': '1234Qwerty!'},
+        {'email': 'vladimir@example.com', 'name': 'Vladimir Zhenski', 'password': '1234Qwerty!'},
+        {'email': 'bbbb@example.com', 'name': 'Boris Borisov', 'password': '1234Qwerty!'},
+        {'email': 'nier@example.com', 'name': 'Nepal Aslanov', 'password': '1234Qwerty!'},
+        {'email': 'timupher@example.com', 'name': 'Timupher Kenesov', 'password': '1234Qwerty!'},
+        {'email': 'amiradil@example.com', 'name': 'Amir Adilov', 'password': '1234Qwerty!'},
+        {'email': 'googleman@example.com', 'name': 'Grigory Popov', 'password': '1234Qwerty!'},
+        {'email': 'niceguy@example.com', 'name': 'Vladimir Kuznetsov', 'password': '1234Qwerty!'}
     ]
 
     users = []
@@ -96,6 +112,125 @@ def main():
             'description': 'Advanced Git techniques: rebase, cherry-pick, bisect, hooks, and branching strategies.',
             'date': timezone.now() + timedelta(days=42, hours=7),
             'organizer': users[1],
+        },
+        {
+            'title': 'AI Workshop',
+            'description': 'Workshop on using AI for data analysis and visualization.',
+            'date': timezone.now() + timedelta(days=49, hours=8),
+            'organizer': users[1],
+        },
+        {
+            'title': 'Cybersecurity Basics',
+            'description': 'Basics of cybersecurity: threat modeling, risk assessment, and mitigation strategies.',
+            'date': timezone.now() + timedelta(days=56, hours=9),
+            'organizer': users[4],
+        },
+        {
+            'title': 'Blockchain Technology',
+            'description': 'Introduction to blockchain technology and its applications in finance and supply chain.',
+            'date': timezone.now() + timedelta(days=63, hours=10),
+            'organizer': users[5],
+        },
+        {
+            'title': 'Data Science',
+            'description': 'Introduction to data science: data cleaning, visualization, and machine learning.',
+            'date': timezone.now() + timedelta(days=70, hours=11),
+            'organizer': users[6],
+        },
+        {
+            'title': 'Web Development',
+            'description': 'Introduction to web development: HTML, CSS, JavaScript, and frameworks.',
+            'date': timezone.now() + timedelta(days=77, hours=12),
+            'organizer': users[7],
+        },
+        {
+            'title': 'Data Engineering',
+            'description': 'Introduction to data engineering: data pipelines, ETL, and data warehousing.',
+            'date': timezone.now() + timedelta(days=84, hours=13),
+            'organizer': users[8],
+        },
+        {
+            'title': 'Data Analysis',
+            'description': 'Introduction to data analysis: data cleaning, visualization, and machine learning.',
+            'date': timezone.now() + timedelta(days=91, hours=14),
+            'organizer': users[9],
+        },
+        {
+            'title': 'Cybersecurity Workshop',
+            'description': 'Workshop on cybersecurity: threat modeling, risk assessment, and mitigation strategies.',
+            'date': timezone.now() + timedelta(days=98, hours=15),
+            'organizer': users[10],
+        },
+        {
+            'title': 'Machine Learning Workshop',
+            'description': 'Workshop on machine learning: data cleaning, visualization, and machine learning.',
+            'date': timezone.now() + timedelta(days=105, hours=16),
+            'organizer': users[11],
+        },
+        {
+            'title': 'Data Science Workshop',
+            'description': 'Workshop on data science: data cleaning, visualization, and machine learning.',
+            'date': timezone.now() + timedelta(days=112, hours=17),
+            'organizer': users[12],
+        },
+        {
+            'title': 'Data Visualization Workshop',
+            'description': 'Workshop on data visualization: data cleaning, visualization, and machine learning.',
+            'date': timezone.now() + timedelta(days=119, hours=18),
+            'organizer': users[13],
+        },
+        {
+            'title': 'Data Engineering Workshop',
+            'description': 'Workshop on data engineering: data pipelines, ETL, and data warehousing.',
+            'date': timezone.now() + timedelta(days=126, hours=19),
+            'organizer': users[14],
+        },
+        {
+            'title': 'Data Analysis Workshop',
+            'description': 'Workshop on data analysis: data cleaning, visualization, and machine learning.',
+            'date': timezone.now() + timedelta(days=133, hours=20),
+            'organizer': users[15],
+        },
+        {
+            'title': 'Data Science Workshop',
+            'description': 'Workshop on data science: data cleaning, visualization, and machine learning.',
+            'date': timezone.now() + timedelta(days=140, hours=21),
+            'organizer': users[16],
+        },
+        {
+            'title': 'Advanced Go meetup',
+            'description': 'Advanced Go meetup: best practices, performance optimization, and concurrency.',
+            'date': timezone.now() + timedelta(days=147, hours=22),
+            'organizer': users[17],
+        },
+        {
+            'title': 'Advanced Python meetup',
+            'description': 'Advanced Python meetup: best practices, performance optimization, and concurrency.',
+            'date': timezone.now() + timedelta(days=154, hours=23),
+        },
+        {
+            'title': 'Advanced Java meetup',
+            'description': 'Advanced Java meetup: best practices, performance optimization, and concurrency.',
+            'date': timezone.now() + timedelta(days=161, hours=24),
+            'organizer': users[18],
+        },
+        {
+            'title': 'Advanced C++ meetup',
+            'description': 'Advanced C++ meetup: best practices, performance optimization, and concurrency.',
+            'date': timezone.now() + timedelta(days=168, hours=25),
+            'organizer': users[19],
+        },
+        {
+            'title': 'Advanced C# meetup',
+            'description': 'Advanced C# meetup: best practices, performance optimization, and concurrency.',
+            'date': timezone.now() + timedelta(days=175, hours=26),
+            'organizer': users[20],
+        },
+        {
+            'title': 'Advanced Ruby meetup',
+            'description': 'Advanced Ruby meetup: best practices, performance optimization, and concurrency.',
+            'date': timezone.now() + timedelta(days=182, hours=27),
+            'organizer': users[21],
         },
     ]
 
