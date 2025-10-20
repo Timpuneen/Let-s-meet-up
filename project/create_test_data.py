@@ -11,8 +11,7 @@ This script:
 4. Registers participants for each event.
 5. Displays summary statistics and test credentials.
 """
-from users.models import User
-from events.models import Event
+
 import os
 import django
 from django.utils import timezone
@@ -22,7 +21,8 @@ from datetime import timedelta
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
 django.setup()
 
-
+from users.models import User
+from events.models import Event
 
 
 def main():
@@ -220,18 +220,6 @@ def main():
             'description': 'Advanced C++ meetup: best practices, performance optimization, and concurrency.',
             'date': timezone.now() + timedelta(days=168, hours=25),
             'organizer': users[19],
-        },
-        {
-            'title': 'Advanced C# meetup',
-            'description': 'Advanced C# meetup: best practices, performance optimization, and concurrency.',
-            'date': timezone.now() + timedelta(days=175, hours=26),
-            'organizer': users[20],
-        },
-        {
-            'title': 'Advanced Ruby meetup',
-            'description': 'Advanced Ruby meetup: best practices, performance optimization, and concurrency.',
-            'date': timezone.now() + timedelta(days=182, hours=27),
-            'organizer': users[20],
         },
     ]
 
