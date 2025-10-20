@@ -62,3 +62,6 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel):
     
     def __str__(self):
         return self.email
+    
+    def __repr__(self):
+        return f"User(email={self.email}, name={self.name})"

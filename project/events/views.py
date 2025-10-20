@@ -3,8 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse
 from .models import Event
 from .serializers import EventSerializer, EventCreateSerializer, EventListSerializer
 

@@ -41,3 +41,6 @@ class Event(AbstractSoftDeletableModel):
     
     def __str__(self):
         return self.title
+    
+    def __repr__(self):
+        return f"Event(title={self.title}, description={self.description}, date={self.date}, organizer={self.organizer}, participants={self.participants.count()})"
