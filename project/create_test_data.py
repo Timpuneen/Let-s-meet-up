@@ -46,15 +46,15 @@ def main():
     # Create users
     print("\nCreating users...")
     users_data = [
-        {'email': 'ivan@example.com', 'name': 'Ivan Ivanov', 'password': 'password123'},
-        {'email': 'maria@example.com', 'name': 'Maria Petrova', 'password': 'password123'},
-        {'email': 'alex@example.com', 'name': 'Alexey Sidorov', 'password': 'password123'},
-        {'email': 'elena@example.com', 'name': 'Elena Smirnova', 'password': 'password123'},
+        {'email': 'ivan@example.com', 'name': 'Ivan Ivanov', 'password': '1234Qwerty!'},
+        {'email': 'maria@example.com', 'name': 'Maria Petrova', 'password': '1234Qwerty!'},
+        {'email': 'alex@example.com', 'name': 'Alexey Sidorov', 'password': '1234Qwerty!'},
+        {'email': 'elena@example.com', 'name': 'Elena Smirnova', 'password': '1234Qwerty!'},
         {'email': 'madina@example.com', 'name': 'Madina Kadyrova', 'password': '1234Qwerty!'},
         {'email': 'sultan@example.com', 'name': 'Sultan Kadyrov', 'password': '1234Qwerty!'},
         {'email': 'azamat@example.com', 'name': 'Azamat Kadyrov', 'password': '1234Qwerty!'},
         {'email': 'diana@example.com', 'name': 'Diana Kadyrova', 'password': '1234Qwerty!'},
-        {'email': 'azamat@example.com', 'name': 'Azamat Kadyrov', 'password': '1234Qwerty!'},
+        {'email': '2azamat@example.com', 'name': '2Azamat Kadyrov', 'password': '1234Qwerty!'},
         {'email': 'arslan@example.com', 'name': 'Arslan Kenesov', 'password': '1234Qwerty!'},
         {'email': 'kairat@example.com', 'name': 'Kairat Kenesov', 'password': '1234Qwerty!'},
         {'email': 'maxim@example.com', 'name': 'Maxim Kenesov', 'password': '1234Qwerty!'},
@@ -207,6 +207,7 @@ def main():
             'title': 'Advanced Python meetup',
             'description': 'Advanced Python meetup: best practices, performance optimization, and concurrency.',
             'date': timezone.now() + timedelta(days=154, hours=23),
+            'organizer': users[18],
         },
         {
             'title': 'Advanced Java meetup',
@@ -230,7 +231,7 @@ def main():
             'title': 'Advanced Ruby meetup',
             'description': 'Advanced Ruby meetup: best practices, performance optimization, and concurrency.',
             'date': timezone.now() + timedelta(days=182, hours=27),
-            'organizer': users[21],
+            'organizer': users[20],
         },
     ]
 
@@ -261,7 +262,7 @@ def main():
     print("\nTest credentials:")
     print("=" * 60)
     for user in users:
-        print(f"   Email: {user.email:25} | Password: password123")
+        print(f"   Email: {user.email:25} | Password: 1234Qwerty!")
     print("=" * 60)
 
     print("\nTest data created successfully.")
