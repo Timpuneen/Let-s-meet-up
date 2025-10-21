@@ -8,7 +8,7 @@ from .models import Event
 @admin.register(Event)
 class EventAdmin(ModelAdmin):
     """Admin panel for Event model with Unfold and soft delete support"""
-    list_display = ['title', 'organizer', 'date', 'participants_count', 'status_badge', 'created_at']
+    list_display = ['title', 'organizer', 'date', 'location', 'participants_count', 'status_badge', 'created_at']
     list_filter = ['date', 'created_at', 'is_deleted']
     search_fields = ['title', 'description', 'organizer__email', 'organizer__name']
     date_hierarchy = 'date'
@@ -18,7 +18,7 @@ class EventAdmin(ModelAdmin):
     
     fieldsets = (
         ('Event Information', {
-            'fields': ('title', 'description', 'date', 'organizer')
+            'fields': ('title', 'description', 'date', 'location', 'organizer')
         }),
         ('Participants', {
             'fields': ('participants',)

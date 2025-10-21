@@ -10,6 +10,7 @@ class Event(AbstractSoftDeletableModel):
     - title: event title
     - description: description
     - date: event date and time
+    - location: event location
     - organizer: organizer (ForeignKey to User)
     - participants: participants (ManyToMany to User)
     - is_deleted: soft delete flag (inherited)
@@ -18,6 +19,7 @@ class Event(AbstractSoftDeletableModel):
     title = models.CharField(max_length=255, verbose_name='Title')
     description = models.TextField(verbose_name='Description')
     date = models.DateTimeField(verbose_name='Event date and time')
+    location = models.CharField(max_length=255, blank=True, default='', verbose_name='Location')
     organizer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
