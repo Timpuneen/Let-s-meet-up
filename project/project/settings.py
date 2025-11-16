@@ -65,6 +65,12 @@ INSTALLED_APPS = [
     'abstracts',
     'users',
     'events',
+    'geography',
+    'friendships',
+    'categories',
+    'participants',
+    'media',
+    'comments',
 ]
 
 MIDDLEWARE = [
