@@ -9,10 +9,10 @@ from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from abstracts.models import AbstractTimestampedModel
+from abstracts.models import AbstractTimestampedModel, AbstractSoftDeletableModel, SoftDeletableManager
 
 
-class EventComment(AbstractTimestampedModel):
+class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
     """
     Model representing a comment on an event.
     
@@ -55,6 +55,8 @@ class EventComment(AbstractTimestampedModel):
         verbose_name='Content',
         help_text='The comment text',
     )
+
+    objects = SoftDeletableManager()
     
     class Meta:
         db_table = 'event_comments'

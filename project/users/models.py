@@ -10,10 +10,8 @@ from typing import Any
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
-from abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel
+from abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel, SoftDeletableManager
 
-
-# Constants for invitation privacy choices
 INVITATION_PRIVACY_EVERYONE = 'everyone'
 INVITATION_PRIVACY_FRIENDS = 'friends'
 INVITATION_PRIVACY_NONE = 'none'
@@ -25,45 +23,18 @@ INVITATION_PRIVACY_CHOICES = [
 ]
 
 
-class UserManager(BaseUserManager):
+class UserManager(SoftDeletableManager, BaseUserManager):
     """
     Custom manager for the User model.
     
-    Provides methods for creating regular users and superusers,
-    and automatically filters out soft-deleted users in querysets.
+    Combines soft-delete filtering from SoftDeletableManager
+    with user creation methods from BaseUserManager.
     
     Examples:
         User.objects.all()  # Only non-deleted users
         User.objects.with_deleted()  # All users including deleted
         User.objects.deleted_only()  # Only deleted users
     """
-    
-    def get_queryset(self) -> models.QuerySet:
-        """
-        Return queryset excluding soft-deleted users.
-        
-        Returns:
-            QuerySet: Filtered queryset with non-deleted users only.
-        """
-        return super().get_queryset().filter(is_deleted=False)
-    
-    def with_deleted(self) -> models.QuerySet:
-        """
-        Return all users including soft-deleted ones.
-        
-        Returns:
-            QuerySet: Unfiltered queryset with all users.
-        """
-        return super().get_queryset()
-    
-    def deleted_only(self) -> models.QuerySet:
-        """
-        Return only soft-deleted users.
-        
-        Returns:
-            QuerySet: Filtered queryset with only deleted users.
-        """
-        return super().get_queryset().filter(is_deleted=True)
     
     def create_user(
         self,
@@ -229,7 +200,7 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
             return True
         
         if self.invitation_privacy == INVITATION_PRIVACY_FRIENDS:
-            # Check if users are friends (will be implemented with Friendship model)
+            # Check if users are friends
             from friendships.models import Friendship, FRIENDSHIP_STATUS_ACCEPTED
             return Friendship.objects.filter(
                 models.Q(sender=self, receiver=inviter) | models.Q(sender=inviter, receiver=self),

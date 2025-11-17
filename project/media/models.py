@@ -9,10 +9,10 @@ from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from abstracts.models import AbstractTimestampedModel
+from abstracts.models import AbstractTimestampedModel, AbstractSoftDeletableModel, SoftDeletableManager
 
 
-class EventPhoto(AbstractTimestampedModel):
+class EventPhoto(AbstractTimestampedModel, AbstractSoftDeletableModel):
     """
     Model representing a photo uploaded to an event.
     
@@ -59,6 +59,8 @@ class EventPhoto(AbstractTimestampedModel):
         help_text='Whether this photo is the event cover image',
     )
     
+    objects = SoftDeletableManager()
+
     class Meta:
         db_table = 'event_photos'
         verbose_name = 'Event Photo'

@@ -8,7 +8,7 @@ geographical references, and various event management features.
 from django.conf import settings
 from django.db import models
 
-from abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel
+from abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel, SoftDeletableManager
 
 
 # Constants for event status choices
@@ -75,6 +75,8 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         max_length=255,
         verbose_name='Address',
         help_text='Physical address of the event venue',
+        null=True,
+        blank=True
     )
     date = models.DateTimeField(
         verbose_name='Event Date and Time',
@@ -115,6 +117,8 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         related_name='events',
         verbose_name='Country',
         help_text='Country where the event takes place',
+        null=True,
+        blank=True
     )
     city = models.ForeignKey(
         'geography.City',
@@ -122,6 +126,8 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         related_name='events',
         verbose_name='City',
         help_text='City where the event takes place',
+        null=True,
+        blank=True
     )
     categories = models.ManyToManyField(
         'categories.Category',
@@ -131,6 +137,8 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         help_text='Categories this event belongs to',
     )
     
+    objects = SoftDeletableManager() 
+
     class Meta:
         db_table = 'events'
         verbose_name = 'Event'

@@ -11,8 +11,6 @@ from django.core.exceptions import ValidationError
 
 from abstracts.models import AbstractTimestampedModel
 
-
-# Constants for participant status choices
 PARTICIPANT_STATUS_PENDING = 'pending'
 PARTICIPANT_STATUS_ACCEPTED = 'accepted'
 PARTICIPANT_STATUS_REJECTED = 'rejected'

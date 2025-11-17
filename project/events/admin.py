@@ -10,7 +10,6 @@ class EventAdmin(ModelAdmin):
     ordering = ['-date']
     readonly_fields = ['created_at', 'updated_at']
     autocomplete_fields = ['organizer', 'country', 'city']
-    filter_horizontal = ['categories']
     
     fieldsets = (
         ('Event Information', {
@@ -24,9 +23,6 @@ class EventAdmin(ModelAdmin):
         }),
         ('Settings', {
             'fields': ('invitation_perm', 'max_participants')
-        }),
-        ('Categories', {
-            'fields': ('categories',)
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
