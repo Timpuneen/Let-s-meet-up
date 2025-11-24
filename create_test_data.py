@@ -18,7 +18,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 # Initialize Django settings
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings.base')
 django.setup()
 
 from users.models import User

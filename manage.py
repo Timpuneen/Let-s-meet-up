@@ -16,7 +16,9 @@ def main():
     )
 
     # Set Django settings module based on environment
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'settings.env.{ENV_ID}')
+    settings_module = f'settings.env.{ENV_ID}'
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
+    
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

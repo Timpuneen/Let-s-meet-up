@@ -20,6 +20,6 @@ assert ENV_ID in ENV_POSSIBLE_OPTIONS, (
 )
 
 # Set Django settings module based on environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'settings.env.{ENV_ID}')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings.base')
 
 application = get_wsgi_application()

@@ -13,9 +13,7 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize django-environ
-env = environ.Env(
-    DEBUG=(bool, False)
-)
+env = environ.Env()
 
 # Read .env file from project root
 try:
