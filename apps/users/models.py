@@ -11,6 +11,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 
 from apps.abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel, SoftDeletableManager
+from apps.friendships.models import Friendship, FRIENDSHIP_STATUS_ACCEPTED
 
 INVITATION_PRIVACY_EVERYONE = 'everyone'
 INVITATION_PRIVACY_FRIENDS = 'friends'
@@ -201,7 +202,6 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
         
         if self.invitation_privacy == INVITATION_PRIVACY_FRIENDS:
             # Check if users are friends
-            from friendships.models import Friendship, FRIENDSHIP_STATUS_ACCEPTED
             return Friendship.objects.filter(
                 models.Q(sender=self, receiver=inviter) | models.Q(sender=inviter, receiver=self),
                 status=FRIENDSHIP_STATUS_ACCEPTED

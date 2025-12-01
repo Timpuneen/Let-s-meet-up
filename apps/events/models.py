@@ -10,6 +10,8 @@ from django.db import models
 
 from apps.abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel, SoftDeletableManager
 
+from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
+
 
 # Constants for event status choices
 EVENT_STATUS_DRAFT = 'draft'
@@ -180,7 +182,6 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         Returns:
             int: Number of participants with accepted status.
         """
-        from participants.models import PARTICIPANT_STATUS_ACCEPTED
         return self.participants_rel.filter(status=PARTICIPANT_STATUS_ACCEPTED).count()
     
     def is_full(self) -> bool:
@@ -209,8 +210,6 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         
         if self.invitation_perm == INVITATION_PERM_ORGANIZER:
             return False
-        
-        from participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
         
         try:
             participant = self.participants_rel.get(user=user, status=PARTICIPANT_STATUS_ACCEPTED)

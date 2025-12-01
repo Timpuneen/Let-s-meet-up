@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
 
     # Local apps
+    'apps.core',
     'apps.abstracts',
     'apps.users',
     'apps.events',
