@@ -1,24 +1,15 @@
 #!/usr/bin/env python
-"""Django's command-line utility for administrative tasks."""
 import os
 import sys
 
-
 def main():
-    """Run administrative tasks."""
-    # Import environment configuration to get ENV_ID
     from settings.conf import ENV_ID, ENV_POSSIBLE_OPTIONS
-
-    # Validate environment ID
     assert ENV_ID in ENV_POSSIBLE_OPTIONS, (
         f"Invalid MEETUP_ENV_ID: '{ENV_ID}'. "
         f"Must be one of {ENV_POSSIBLE_OPTIONS}"
     )
-
-    # Set Django settings module based on environment
     settings_module = f'settings.env.{ENV_ID}'
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
-    
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -28,7 +19,6 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
-
 
 if __name__ == '__main__':
     main()
