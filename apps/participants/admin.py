@@ -14,19 +14,16 @@ from .models import EventParticipant
 
 @admin.register(EventParticipant)
 class EventParticipantAdmin(ModelAdmin):
-    """Admin interface for event participants."""
+    """Admin interface for event participants (accepted members only)."""
     
     list_display = [
         'event_link',
         'user_link',
-        'status_badge',
         'is_admin_badge',
-        'invited_by_link',
         'joined_date',
     ]
     
     list_filter = [
-        'status',
         'is_admin',
         ('event', RelatedDropdownFilter),
         ('created_at', RangeDateTimeFilter),
@@ -36,27 +33,33 @@ class EventParticipantAdmin(ModelAdmin):
         'event__title',
         'user__email',
         'user__name',
-        'invited_by__email',
     ]
     
     ordering = ['-created_at']
     
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'status']
     
-    autocomplete_fields = ['event', 'user', 'invited_by']
+    autocomplete_fields = ['event', 'user']
     
     fieldsets = (
         (_('Participation Details'), {
-            'fields': ('event', 'user', 'status', 'is_admin'),
-        }),
-        (_('Invitation'), {
-            'fields': ('invited_by',),
+            'fields': ('event', 'user', 'is_admin'),
+            'description': 'Manage confirmed event participants',
         }),
         (_('Timestamps'), {
             'fields': ('created_at', 'updated_at'),
             'classes': ['collapse'],
         }),
     )
+    
+    actions = [
+        'make_admin',
+        'remove_admin',
+    ]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('event', 'user')
 
     @display(description=_('Event'), ordering='event__title')
     def event_link(self, obj):
@@ -74,36 +77,53 @@ class EventParticipantAdmin(ModelAdmin):
             obj.user.name or obj.user.email
         )
 
-    @display(description=_('Status'), ordering='status')
-    def status_badge(self, obj):
-        colors = {
-            'pending': '#f59e0b',
-            'accepted': '#22c55e',
-            'rejected': '#ef4444',
-            'cancelled': '#6b7280',
-        }
-        return format_html(
-            '<span style="background:{};color:white;padding:4px 10px;border-radius:10px;font-size:11px;">{}</span>',
-            colors.get(obj.status, '#6b7280'),
-            obj.get_status_display()
-        )
-
-    @display(description=_('Admin'), ordering='is_admin')
+    @display(description=_('Role'), ordering='is_admin')
     def is_admin_badge(self, obj):
         if obj.is_admin:
-            return format_html('<span style="color:#3b82f6;font-weight:600;">✓ Admin</span>')
-        return format_html('<span style="color:#9ca3af;">Member</span>')
-
-    @display(description=_('Invited By'))
-    def invited_by_link(self, obj):
-        if obj.invited_by:
             return format_html(
-                '<a href="/admin/users/user/{}/change/" style="color:#6b7280;">{}</a>',
-                obj.invited_by.pk,
-                obj.invited_by.name or obj.invited_by.email
+                '<span style="background:#3b82f6;color:white;padding:4px 10px;border-radius:10px;font-size:11px;font-weight:500;">👑 Admin</span>'
             )
-        return '-'
+        return format_html(
+            '<span style="background:#e5e7eb;color:#374151;padding:4px 10px;border-radius:10px;font-size:11px;">Member</span>'
+        )
 
     @display(description=_('Joined'), ordering='created_at')
     def joined_date(self, obj):
-        return obj.created_at.strftime('%b %d, %Y')
+        from django.utils import timezone
+        now = timezone.now()
+        delta = now - obj.created_at
+        
+        if delta.days == 0:
+            return format_html('<span style="color:#22c55e;">Today</span>')
+        elif delta.days < 7:
+            return format_html('<span style="color:#f59e0b;">{} days ago</span>', delta.days)
+        else:
+            return obj.created_at.strftime('%b %d, %Y')
+
+    @admin.action(description=_('Grant admin privileges'))
+    def make_admin(self, request, queryset):
+        """Grant admin privileges to selected participants."""
+        updated = 0
+        for participant in queryset.filter(is_admin=False):
+            participant.make_admin()
+            updated += 1
+        
+        self.message_user(
+            request,
+            f'{updated} participant(s) granted admin privileges.',
+            level='success'
+        )
+
+    @admin.action(description=_('Remove admin privileges'))
+    def remove_admin(self, request, queryset):
+        """Remove admin privileges from selected participants."""
+        updated = 0
+        for participant in queryset.filter(is_admin=True):
+            participant.remove_admin()
+            updated += 1
+        
+        self.message_user(
+            request,
+            f'{updated} participant(s) admin privileges removed.',
+            level='success'
+        )

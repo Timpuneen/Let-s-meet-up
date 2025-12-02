@@ -18,7 +18,8 @@ from apps.geography.models import Country, City
 from apps.events.models import Event, EVENT_STATUS_PUBLISHED, EVENT_STATUS_COMPLETED, INVITATION_PERM_PARTICIPANTS, INVITATION_PERM_ADMINS, INVITATION_PERM_ORGANIZER
 from apps.categories.models import Category
 from apps.friendships.models import Friendship, FRIENDSHIP_STATUS_ACCEPTED, FRIENDSHIP_STATUS_PENDING
-from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED, PARTICIPANT_STATUS_PENDING
+from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
+from apps.invitations.models import EventInvitation, INVITATION_STATUS_PENDING, INVITATION_STATUS_ACCEPTED, INVITATION_STATUS_REJECTED
 from apps.comments.models import EventComment
 from apps.media.models import EventPhoto
 
@@ -63,6 +64,9 @@ class Command(BaseCommand):
                 self.stdout.write('✅ Seeding participants...')
                 self.create_participants(events, users)
                 
+                self.stdout.write('📧 Seeding invitations...')
+                self.create_invitations(events, users)
+                
                 self.stdout.write('💬 Seeding comments...')
                 self.create_comments(events, users, 200)
                 
@@ -80,6 +84,7 @@ class Command(BaseCommand):
         """Clear all existing data from the database."""
         EventPhoto.objects.all().delete()
         EventComment.objects.all().delete()
+        EventInvitation.objects.all().delete()
         EventParticipant.objects.all().delete()
         Friendship.objects.all().delete()
         Event.objects.all().delete()
@@ -377,17 +382,15 @@ class Command(BaseCommand):
         self.stdout.write(f'  ✓ Created {created_count} friendships')
     
     def create_participants(self, events, users):
-        """Create event participants."""
+        """Create accepted event participants (only accepted status)."""
         created_count = 0
         
         for event in events:
-            # Skip creating participant for organizer - they're automatically a participant
-            # according to the model's validation logic
-            
-            # Add random participants (excluding organizer)
-            num_participants = random.randint(3, 15)
+            # Skip organizer - they're automatically a participant
+            # Add random accepted participants
+            num_participants = random.randint(3, 12)
             if event.max_participants:
-                num_participants = min(num_participants, event.max_participants)
+                num_participants = min(num_participants, event.max_participants - 1)  # -1 for organizer
             
             potential_participants = [u for u in users if u != event.organizer]
             participants = random.sample(
@@ -397,19 +400,95 @@ class Command(BaseCommand):
             
             for user in participants:
                 if not EventParticipant.objects.filter(event=event, user=user).exists():
-                    status = random.choice([PARTICIPANT_STATUS_ACCEPTED] * 8 + [PARTICIPANT_STATUS_PENDING] * 2)
-                    is_admin = random.random() < 0.1  # 10% chance to be admin
+                    is_admin = random.random() < 0.15  # 15% chance to be admin
                     
                     EventParticipant.objects.create(
                         event=event,
                         user=user,
-                        status=status,
-                        is_admin=is_admin if status == PARTICIPANT_STATUS_ACCEPTED else False,
-                        invited_by=random.choice([event.organizer, None])
+                        is_admin=is_admin,
+                        # status is always 'accepted' by default in the model
                     )
                     created_count += 1
         
-        self.stdout.write(f'  ✓ Created {created_count} event participants')
+        self.stdout.write(f'  ✓ Created {created_count} accepted participants')
+    
+    def create_invitations(self, events, users):
+        """Create event invitations with different statuses."""
+        created_count = 0
+        
+        for event in events:
+            # Get current participants and organizer
+            existing_participant_ids = set(
+                EventParticipant.objects.filter(event=event)
+                .values_list('user_id', flat=True)
+            )
+            existing_participant_ids.add(event.organizer_id)
+            
+            # Get users who can send invitations
+            potential_inviters = [event.organizer]
+            if event.invitation_perm == INVITATION_PERM_PARTICIPANTS:
+                event_participants = EventParticipant.objects.filter(
+                    event=event
+                ).select_related('user')
+                potential_inviters.extend([p.user for p in event_participants])
+            elif event.invitation_perm == INVITATION_PERM_ADMINS:
+                admin_participants = EventParticipant.objects.filter(
+                    event=event,
+                    is_admin=True
+                ).select_related('user')
+                potential_inviters.extend([p.user for p in admin_participants])
+            
+            if not potential_inviters:
+                continue
+            
+            # Create 2-8 invitations per event
+            num_invitations = random.randint(2, 8)
+            
+            # Get users who are not yet participants or invited
+            existing_invitation_user_ids = set(
+                EventInvitation.objects.filter(event=event)
+                .values_list('invited_user_id', flat=True)
+            )
+            
+            potential_invitees = [
+                u for u in users 
+                if u.id not in existing_participant_ids 
+                and u.id not in existing_invitation_user_ids
+            ]
+            
+            if not potential_invitees:
+                continue
+            
+            invitees = random.sample(
+                potential_invitees,
+                min(num_invitations, len(potential_invitees))
+            )
+            
+            for invitee in invitees:
+                inviter = random.choice(potential_inviters)
+                
+                # Status distribution: 60% pending, 25% accepted, 15% rejected
+                status_choice = random.random()
+                if status_choice < 0.60:
+                    status = INVITATION_STATUS_PENDING
+                elif status_choice < 0.85:
+                    status = INVITATION_STATUS_ACCEPTED
+                else:
+                    status = INVITATION_STATUS_REJECTED
+                
+                try:
+                    EventInvitation.objects.create(
+                        event=event,
+                        invited_user=invitee,
+                        invited_by=inviter,
+                        status=status,
+                    )
+                    created_count += 1
+                except Exception as e:
+                    # Skip if validation fails
+                    continue
+        
+        self.stdout.write(f'  ✓ Created {created_count} invitations')
     
     def create_comments(self, events, users, count):
         """Create event comments with threaded replies."""
@@ -420,16 +499,17 @@ class Command(BaseCommand):
         for _ in range(int(count * 0.7)):
             event = random.choice(events)
             
-            # Only participants and organizer can comment
+            # Only accepted participants and organizer can comment
             participants = EventParticipant.objects.filter(
-                event=event,
-                status=PARTICIPANT_STATUS_ACCEPTED
+                event=event
             ).select_related('user')
             
-            if not participants.exists():
+            potential_commenters = [p.user for p in participants] + [event.organizer]
+            
+            if not potential_commenters:
                 continue
             
-            user = random.choice([p.user for p in participants])
+            user = random.choice(potential_commenters)
             
             comment = EventComment.objects.create(
                 event=event,
@@ -448,14 +528,15 @@ class Command(BaseCommand):
             event = parent_comment.event
             
             participants = EventParticipant.objects.filter(
-                event=event,
-                status=PARTICIPANT_STATUS_ACCEPTED
+                event=event
             ).select_related('user')
             
-            if not participants.exists():
+            potential_commenters = [p.user for p in participants] + [event.organizer]
+            
+            if not potential_commenters:
                 continue
             
-            user = random.choice([p.user for p in participants])
+            user = random.choice(potential_commenters)
             
             reply = EventComment.objects.create(
                 event=event,
@@ -489,21 +570,22 @@ class Command(BaseCommand):
             num_photos = random.randint(1, 5)
             
             participants = EventParticipant.objects.filter(
-                event=event,
-                status=PARTICIPANT_STATUS_ACCEPTED
+                event=event
             ).select_related('user')
             
-            if not participants.exists():
+            potential_uploaders = [p.user for p in participants] + [event.organizer]
+            
+            if not potential_uploaders:
                 continue
             
             for i in range(num_photos):
-                uploader = random.choice([p.user for p in participants])
+                uploader = random.choice(potential_uploaders)
                 
                 # Pick a random source and generate URL
                 source_generator = random.choice(photo_sources)
                 photo_url = source_generator()
                 
-                photo = EventPhoto.objects.create(
+                EventPhoto.objects.create(
                     event=event,
                     uploaded_by=uploader,
                     url=photo_url,
@@ -526,6 +608,10 @@ class Command(BaseCommand):
         self.stdout.write(f'  Events: {Event.objects.count()}')
         self.stdout.write(f'  Friendships: {Friendship.objects.count()}')
         self.stdout.write(f'  Participants: {EventParticipant.objects.count()}')
+        self.stdout.write(f'  Invitations: {EventInvitation.objects.count()}')
+        self.stdout.write(f'    - Pending: {EventInvitation.objects.filter(status=INVITATION_STATUS_PENDING).count()}')
+        self.stdout.write(f'    - Accepted: {EventInvitation.objects.filter(status=INVITATION_STATUS_ACCEPTED).count()}')
+        self.stdout.write(f'    - Rejected: {EventInvitation.objects.filter(status=INVITATION_STATUS_REJECTED).count()}')
         self.stdout.write(f'  Comments: {EventComment.objects.count()}')
         self.stdout.write(f'  Photos: {EventPhoto.objects.count()}')
         self.stdout.write('='*50 + '\n')

@@ -23,16 +23,18 @@ from apps.media.models import EventPhoto
 
 
 class EventParticipantInline(TabularInline):
-    """Inline for event participants."""
+    """Inline for event participants (accepted members only)."""
     model = EventParticipant
     extra = 0
-    fields = ['user', 'status', 'is_admin', 'invited_by', 'created_at']
+    fields = ['user', 'is_admin', 'created_at']
     readonly_fields = ['created_at']
-    autocomplete_fields = ['user', 'invited_by']
+    autocomplete_fields = ['user']
+    verbose_name = 'Participant'
+    verbose_name_plural = 'Participants (Accepted Members)'
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related('user', 'invited_by')
+        return qs.select_related('user')
 
 
 class EventCommentInline(TabularInline):
@@ -83,7 +85,7 @@ class StatusFilter(admin.SimpleListFilter):
             return queryset.filter(status='completed')
         if self.value() == 'full':
             return queryset.annotate(
-                participants_count=Count('participants_rel', filter=Q(participants_rel__status='accepted'))
+                participants_count=Count('participants_rel')
             ).filter(
                 participants_count__gte=models.F('max_participants')
             ).exclude(max_participants__isnull=True)
@@ -102,6 +104,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         'status_badge',
         'capacity_info',
         'participants_count_display',
+        'invitations_count_display',
         'categories_display',
     ]
     
@@ -178,18 +181,17 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         ).prefetch_related(
             'categories'
         ).annotate(
-            participants_accepted=Count(
-                'participants_rel',
-                filter=Q(participants_rel__status='accepted'),
+            participants_count=Count('participants_rel', distinct=True),
+            invitations_pending=Count(
+                'invitations',
+                filter=Q(invitations__status='pending'),
                 distinct=True
             ),
             comments_count=Count('comments', distinct=True),
             photos_count=Count('photos', distinct=True),
         )
 
-    # -------------------------------
-    # Display methods - FIXED: Remove list wrapping
-    # -------------------------------
+    # Display methods
 
     @display(description=_('Event'), ordering='title', header=True)
     def title_with_status(self, obj):
@@ -200,7 +202,6 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             indicator = '<span style="color:#22c55e;">●</span> ' if obj.date > now else '<span style="color:#f59e0b;">●</span> '
         elif obj.status == 'cancelled':
             indicator = '<span style="color:#ef4444;">●</span> '
-        # For header columns in Unfold, use mark_safe with list
         return [mark_safe(f'{indicator}<strong>{obj.title}</strong>')]
 
     @display(description=_('Organizer'), ordering='organizer__email')
@@ -250,26 +251,37 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
     @display(description=_('Capacity'))
     def capacity_info(self, obj):
         if obj.max_participants:
-            percentage = (obj.participants_accepted / obj.max_participants * 100)
+            percentage = (obj.participants_count / obj.max_participants * 100)
             color = '#ef4444' if percentage >= 90 else '#f59e0b' if percentage >= 70 else '#22c55e'
             return format_html(
                 '<span style="color:{};">{} / {}</span>', 
                 color, 
-                obj.participants_accepted, 
+                obj.participants_count, 
                 obj.max_participants
             )
         return format_html('<span style="color:#6b7280;">Unlimited</span>')
 
-    @display(description=_('Participants'), ordering='participants_accepted')
+    @display(description=_('Participants'), ordering='participants_count')
     def participants_count_display(self, obj):
-        count = obj.participants_accepted
+        count = obj.participants_count
         if count > 0:
             return format_html(
-                '<a href="/admin/participants/eventparticipant/?event__id__exact={}" style="color:#8b5cf6;font-weight:500;">{} participants</a>', 
+                '<a href="/admin/participants/eventparticipant/?event__id__exact={}" style="color:#8b5cf6;font-weight:500;">👥 {} members</a>', 
                 obj.pk, 
                 count
             )
         return format_html('<span style="color:#9ca3af;">No participants</span>')
+
+    @display(description=_('Invitations'))
+    def invitations_count_display(self, obj):
+        pending = obj.invitations_pending
+        if pending > 0:
+            return format_html(
+                '<a href="/admin/invitations/eventinvitation/?event__id__exact={}&status__exact=pending" style="color:#f59e0b;font-weight:500;">📨 {} pending</a>',
+                obj.pk,
+                pending
+            )
+        return format_html('<span style="color:#9ca3af;">No pending</span>')
 
     @display(description=_('Categories'))
     def categories_display(self, obj):
@@ -296,21 +308,31 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         <div style="padding:15px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
             <h3 style="margin:0 0 15px 0;color:#374151;font-size:14px;">Event Overview</h3>
             <table style="width:100%;border-collapse:collapse;">
-                <tr>
-                    <td style="padding:8px 0;color:#6b7280;"><strong>Total Participants:</strong></td>
-                    <td style="text-align:right;color:#111827;">{obj.participants_rel.count()}</td>
+                <tr style="border-bottom:2px solid #e5e7eb;">
+                    <td colspan="2" style="padding:8px 0;color:#6b7280;font-weight:600;">Participants</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:#6b7280;"><strong>Accepted:</strong></td>
-                    <td style="text-align:right;color:#22c55e;font-weight:500;">{obj.participants_accepted}</td>
-                </tr>
-                <tr>
-                    <td style="padding:8px 0;color:#6b7280;"><strong>Pending:</strong></td>
-                    <td style="text-align:right;color:#f59e0b;">{obj.participants_rel.filter(status='pending').count()}</td>
+                    <td style="padding:8px 0;color:#6b7280;"><strong>Total Members:</strong></td>
+                    <td style="text-align:right;color:#22c55e;font-weight:500;">{obj.participants_count}</td>
                 </tr>
                 <tr>
                     <td style="padding:8px 0;color:#6b7280;"><strong>Admins:</strong></td>
                     <td style="text-align:right;color:#111827;">{obj.participants_rel.filter(is_admin=True).count()}</td>
+                </tr>
+                <tr style="border-bottom:2px solid #e5e7eb;">
+                    <td colspan="2" style="padding:8px 0;color:#6b7280;font-weight:600;">Invitations</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#6b7280;"><strong>Pending:</strong></td>
+                    <td style="text-align:right;color:#f59e0b;font-weight:500;">{obj.invitations.filter(status='pending').count()}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#6b7280;"><strong>Accepted:</strong></td>
+                    <td style="text-align:right;color:#22c55e;">{obj.invitations.filter(status='accepted').count()}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#6b7280;"><strong>Rejected:</strong></td>
+                    <td style="text-align:right;color:#ef4444;">{obj.invitations.filter(status='rejected').count()}</td>
                 </tr>
                 <tr style="border-top:1px solid #e5e7eb;">
                     <td style="padding:8px 0;color:#6b7280;"><strong>Comments:</strong></td>
@@ -339,12 +361,10 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         if not obj.pk:
             return "Save event to see participants"
         
-        participants = obj.participants_rel.select_related('user').filter(
-            status='accepted'
-        )[:10]
+        participants = obj.participants_rel.select_related('user')[:10]
         
         if not participants:
-            return "No accepted participants yet"
+            return "No participants yet"
         
         rows = ''.join([
             f'<tr><td style="padding:6px 0;">{p.user.name or p.user.email}</td><td style="text-align:right;"><span style="background:{"#3b82f6" if p.is_admin else "#e5e7eb"};color:{"white" if p.is_admin else "#374151"};padding:2px 8px;border-radius:4px;font-size:10px;">{"Admin" if p.is_admin else "Member"}</span></td></tr>'
@@ -356,7 +376,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             <table style="width:100%;">
                 {rows}
             </table>
-            {f'<p style="margin:10px 0 0 0;color:#6b7280;font-size:12px;">... and {obj.participants_accepted - 10} more</p>' if obj.participants_accepted > 10 else ''}
+            {f'<p style="margin:10px 0 0 0;color:#6b7280;font-size:12px;">... and {obj.participants_count - 10} more</p>' if obj.participants_count > 10 else ''}
         </div>
         """
         return format_html(html)
