@@ -1,127 +1,78 @@
-"""Admin configuration for comment models."""
+"""
+Admin configuration for EventComment model.
+"""
 
 from django.contrib import admin
+from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
+from unfold.decorators import display
+from unfold.contrib.filters.admin import RelatedDropdownFilter, RangeDateTimeFilter
 
 from .models import EventComment
 
 
 @admin.register(EventComment)
 class EventCommentAdmin(ModelAdmin):
-    """
-    Admin interface for EventComment model.
-    
-    Provides list display, search, filtering, and hierarchical
-    viewing for managing event comments.
-    """
+    """Admin interface for event comments."""
     
     list_display = [
-        'id',
-        'user',
-        'event',
-        'content_preview',
-        'parent',
-        'depth_indicator',
-        'reply_count',
-        'created_at',
+        'comment_preview',
+        'user_link',
+        'event_link',
+        'has_parent',
+        'created_date',
     ]
+    
+    list_filter = [
+        ('event', RelatedDropdownFilter),
+        ('created_at', RangeDateTimeFilter),
+    ]
+    
     search_fields = [
         'content',
         'user__email',
         'user__name',
         'event__title',
     ]
-    list_filter = ['created_at', 'event']
+    
     ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at', 'depth_level', 'total_replies']
+    
+    readonly_fields = ['created_at', 'updated_at']
+    
     autocomplete_fields = ['event', 'user', 'parent']
     
-    fieldsets = (
-        ('Comment Information', {
-            'fields': ('event', 'user', 'parent')
-        }),
-        ('Content', {
-            'fields': ('content',)
-        }),
-        ('Metadata', {
-            'fields': ('depth_level', 'total_replies')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def content_preview(self, obj: EventComment) -> str:
-        """
-        Display a truncated version of the comment content.
-        
-        Args:
-            obj: EventComment instance.
-        
-        Returns:
-            str: Truncated comment content.
-        """
-        max_length = 60
-        if len(obj.content) > max_length:
-            return obj.content[:max_length] + '...'
-        return obj.content
-    
-    content_preview.short_description = 'Content'
-    
-    def depth_indicator(self, obj: EventComment) -> str:
-        """
-        Display visual indicator of comment depth.
-        
-        Args:
-            obj: EventComment instance.
-        
-        Returns:
-            str: Visual representation of nesting level.
-        """
-        depth = obj.get_depth()
-        return '→ ' * depth + f'Level {depth}'
-    
-    depth_indicator.short_description = 'Depth'
-    
-    def reply_count(self, obj: EventComment) -> int:
-        """
-        Display the number of replies to this comment.
-        
-        Args:
-            obj: EventComment instance.
-        
-        Returns:
-            int: Number of replies.
-        """
-        return obj.get_reply_count()
-    
-    reply_count.short_description = 'Replies'
-    
-    def depth_level(self, obj: EventComment) -> int:
-        """
-        Display the depth level in readonly field.
-        
-        Args:
-            obj: EventComment instance.
-        
-        Returns:
-            int: Depth level.
-        """
-        return obj.get_depth()
-    
-    depth_level.short_description = 'Thread Depth'
-    
-    def total_replies(self, obj: EventComment) -> int:
-        """
-        Display the total number of replies in readonly field.
-        
-        Args:
-            obj: EventComment instance.
-        
-        Returns:
-            int: Total replies count.
-        """
-        return obj.get_reply_count()
-    
-    total_replies.short_description = 'Total Replies'
+    @display(description=_('Comment'), header=True)
+    def comment_preview(self, obj):
+        preview = obj.content[:60] + '...' if len(obj.content) > 60 else obj.content
+        return [
+            format_html('<span style="color:#374151;">{}</span>', preview)
+        ]
+
+
+    @display(description=_('User'), ordering='user__email')
+    def user_link(self, obj):
+        return format_html(
+            '<a href="/admin/users/user/{}/change/" style="color:#8b5cf6;">{}</a>',
+            obj.user.pk,
+            obj.user.name or obj.user.email
+        )
+
+    @display(description=_('Event'), ordering='event__title')
+    def event_link(self, obj):
+        return format_html(
+            '<a href="/admin/events/event/{}/change/" style="color:#8b5cf6;">{}</a>',
+            obj.event.pk,
+            obj.event.title
+        )
+
+    @display(description=_('Reply'), ordering='parent')
+    def has_parent(self, obj):
+        if obj.parent:
+            return format_html('<span style="color:#f59e0b;">↳ Reply</span>')
+        return format_html('<span style="color:#22c55e;">● Original</span>')
+
+    @display(description=_('Posted'), ordering='created_at')
+    def created_date(self, obj):
+        return obj.created_at.strftime('%b %d, %Y %H:%M')
+

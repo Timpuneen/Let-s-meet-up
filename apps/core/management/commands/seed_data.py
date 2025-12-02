@@ -15,7 +15,7 @@ from datetime import timedelta
 
 from apps.users.models import User, INVITATION_PRIVACY_EVERYONE, INVITATION_PRIVACY_FRIENDS, INVITATION_PRIVACY_NONE
 from apps.geography.models import Country, City
-from apps.events.models import Event, EVENT_STATUS_PUBLISHED, EVENT_STATUS_DRAFT, EVENT_STATUS_COMPLETED, INVITATION_PERM_PARTICIPANTS, INVITATION_PERM_ADMINS, INVITATION_PERM_ORGANIZER
+from apps.events.models import Event, EVENT_STATUS_PUBLISHED, EVENT_STATUS_COMPLETED, INVITATION_PERM_PARTICIPANTS, INVITATION_PERM_ADMINS, INVITATION_PERM_ORGANIZER
 from apps.categories.models import Category
 from apps.friendships.models import Friendship, FRIENDSHIP_STATUS_ACCEPTED, FRIENDSHIP_STATUS_PENDING
 from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED, PARTICIPANT_STATUS_PENDING
@@ -249,7 +249,7 @@ class Command(BaseCommand):
     def create_events(self, users, cities, categories, count):
         """Create diverse events with realistic data."""
         events = []
-        statuses = [EVENT_STATUS_PUBLISHED] * 7 + [EVENT_STATUS_DRAFT, EVENT_STATUS_COMPLETED]
+        statuses = [EVENT_STATUS_PUBLISHED] * 7 + [EVENT_STATUS_COMPLETED]
         invitation_perms = [INVITATION_PERM_PARTICIPANTS] * 6 + [INVITATION_PERM_ADMINS] * 3 + [INVITATION_PERM_ORGANIZER]
         
         event_titles = [
@@ -305,7 +305,7 @@ class Command(BaseCommand):
                 # Future events
                 days_ahead = random.randint(1, 90)
                 event_date = timezone.now() + timedelta(days=days_ahead, hours=random.randint(9, 20))
-                status = random.choice([EVENT_STATUS_PUBLISHED, EVENT_STATUS_DRAFT])
+                status = random.choice([EVENT_STATUS_PUBLISHED])
             elif rand < 0.8:
                 # Recent past
                 days_ago = random.randint(1, 30)
@@ -469,11 +469,19 @@ class Command(BaseCommand):
         self.stdout.write(f'  ✓ Created {created_count} comments')
     
     def create_photos(self, events, users, count):
-        """Create event photos."""
+        """Create event photos with working URLs from multiple sources."""
         created_count = 0
-        photo_urls = [
-            'https://picsum.photos/800/600?random=',
-            'https://images.unsplash.com/photo-',
+        
+        # Multiple reliable image sources
+        photo_sources = [
+            # Picsum Photos - Lorem Ipsum for photos, very reliable
+            lambda: f"https://picsum.photos/seed/{random.randint(1, 10000)}/800/600",
+            
+            # Unsplash Source with categories
+            lambda: f"https://source.unsplash.com/800x600/?{random.choice(['party', 'conference', 'meeting', 'sports', 'concert', 'food', 'nature', 'people', 'fitness', 'travel'])}",
+            
+            # Placeholder.com - always works
+            lambda: f"https://via.placeholder.com/800x600/{random.choice(['FF6B6B', '4ECDC4', '45B7D1', 'FFA07A', '98D8C8', 'F7DC6F', 'BB8FCE'])}/FFFFFF?text=Event+Photo",
         ]
         
         for event in events[:min(len(events), count // 2)]:
@@ -491,16 +499,20 @@ class Command(BaseCommand):
             for i in range(num_photos):
                 uploader = random.choice([p.user for p in participants])
                 
+                # Pick a random source and generate URL
+                source_generator = random.choice(photo_sources)
+                photo_url = source_generator()
+                
                 photo = EventPhoto.objects.create(
                     event=event,
                     uploaded_by=uploader,
-                    url=f"{random.choice(photo_urls)}{random.randint(1000, 9999)}",
+                    url=photo_url,
                     caption=fake.sentence() if random.random() > 0.5 else None,
                     is_cover=(i == 0)  # First photo is cover
                 )
                 created_count += 1
         
-        self.stdout.write(f'  ✓ Created {created_count} photos')
+        self.stdout.write(f'  ✓ Created {created_count} photos from multiple image sources')
     
     def print_statistics(self):
         """Print database statistics."""

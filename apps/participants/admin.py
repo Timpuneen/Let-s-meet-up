@@ -1,103 +1,109 @@
-"""Admin configuration for participant models."""
+"""
+Admin configuration for EventParticipant model.
+"""
 
 from django.contrib import admin
+from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
+from unfold.decorators import display
+from unfold.contrib.filters.admin import RelatedDropdownFilter, RangeDateTimeFilter
 
-from .models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED, PARTICIPANT_STATUS_REJECTED
+from .models import EventParticipant
 
 
 @admin.register(EventParticipant)
 class EventParticipantAdmin(ModelAdmin):
-    """
-    Admin interface for EventParticipant model.
-    
-    Provides list display, search, filtering, and actions
-    for managing event participants.
-    """
+    """Admin interface for event participants."""
     
     list_display = [
-        'user',
-        'event',
+        'event_link',
+        'user_link',
+        'status_badge',
+        'is_admin_badge',
+        'invited_by_link',
+        'joined_date',
+    ]
+    
+    list_filter = [
         'status',
         'is_admin',
-        'invited_by',
-        'created_at',
+        ('event', RelatedDropdownFilter),
+        ('created_at', RangeDateTimeFilter),
     ]
+    
     search_fields = [
+        'event__title',
         'user__email',
         'user__name',
-        'event__title',
         'invited_by__email',
-        'invited_by__name',
     ]
-    list_filter = ['status', 'is_admin', 'created_at', 'event']
+    
     ordering = ['-created_at']
+    
     readonly_fields = ['created_at', 'updated_at']
+    
     autocomplete_fields = ['event', 'user', 'invited_by']
     
-    actions = ['accept_participants', 'reject_participants', 'make_admin', 'remove_admin']
-    
-    def accept_participants(self, request, queryset):
-        """
-        Admin action to accept selected participants.
-        
-        Args:
-            request: HttpRequest object.
-            queryset: Selected EventParticipant instances.
-        """
-        updated = 0
-        for participant in queryset:
-            try:
-                participant.accept()
-                updated += 1
-            except Exception as e:
-                self.message_user(
-                    request,
-                    f'Error accepting {participant}: {str(e)}',
-                    level='error'
-                )
-        
-        if updated > 0:
-            self.message_user(request, f'{updated} participant(s) accepted.')
-    
-    accept_participants.short_description = 'Accept selected participants'
-    
-    def reject_participants(self, request, queryset):
-        """
-        Admin action to reject selected participants.
-        
-        Args:
-            request: HttpRequest object.
-            queryset: Selected EventParticipant instances.
-        """
-        updated = queryset.update(status=PARTICIPANT_STATUS_REJECTED)
-        self.message_user(request, f'{updated} participant(s) rejected.')
-    
-    reject_participants.short_description = 'Reject selected participants'
-    
-    def make_admin(self, request, queryset):
-        """
-        Admin action to grant admin privileges to selected participants.
-        
-        Args:
-            request: HttpRequest object.
-            queryset: Selected EventParticipant instances.
-        """
-        accepted = queryset.filter(status=PARTICIPANT_STATUS_ACCEPTED)
-        updated = accepted.update(is_admin=True)
-        self.message_user(request, f'{updated} participant(s) made admin.')
-    
-    make_admin.short_description = 'Make selected participants admin'
-    
-    def remove_admin(self, request, queryset):
-        """
-        Admin action to remove admin privileges from selected participants.
-        
-        Args:
-            request: HttpRequest object.
-            queryset: Selected EventParticipant instances.
-        """
-        updated = queryset.update(is_admin=False)
-        self.message_user(request, f'{updated} participant(s) removed from admin.')
-    
-    remove_admin.short_description = 'Remove admin from selected participants'
+    fieldsets = (
+        (_('Participation Details'), {
+            'fields': ('event', 'user', 'status', 'is_admin'),
+        }),
+        (_('Invitation'), {
+            'fields': ('invited_by',),
+        }),
+        (_('Timestamps'), {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ['collapse'],
+        }),
+    )
+
+    @display(description=_('Event'), ordering='event__title')
+    def event_link(self, obj):
+        return format_html(
+            '<a href="/admin/events/event/{}/change/" style="color:#8b5cf6;font-weight:500;">{}</a>',
+            obj.event.pk,
+            obj.event.title
+        )
+
+    @display(description=_('User'), ordering='user__email')
+    def user_link(self, obj):
+        return format_html(
+            '<a href="/admin/users/user/{}/change/" style="color:#8b5cf6;">{}</a>',
+            obj.user.pk,
+            obj.user.name or obj.user.email
+        )
+
+    @display(description=_('Status'), ordering='status')
+    def status_badge(self, obj):
+        colors = {
+            'pending': '#f59e0b',
+            'accepted': '#22c55e',
+            'rejected': '#ef4444',
+            'cancelled': '#6b7280',
+        }
+        return format_html(
+            '<span style="background:{};color:white;padding:4px 10px;border-radius:10px;font-size:11px;">{}</span>',
+            colors.get(obj.status, '#6b7280'),
+            obj.get_status_display()
+        )
+
+    @display(description=_('Admin'), ordering='is_admin')
+    def is_admin_badge(self, obj):
+        if obj.is_admin:
+            return format_html('<span style="color:#3b82f6;font-weight:600;">✓ Admin</span>')
+        return format_html('<span style="color:#9ca3af;">Member</span>')
+
+    @display(description=_('Invited By'))
+    def invited_by_link(self, obj):
+        if obj.invited_by:
+            return format_html(
+                '<a href="/admin/users/user/{}/change/" style="color:#6b7280;">{}</a>',
+                obj.invited_by.pk,
+                obj.invited_by.name or obj.invited_by.email
+            )
+        return '-'
+
+    @display(description=_('Joined'), ordering='created_at')
+    def joined_date(self, obj):
+        return obj.created_at.strftime('%b %d, %Y')

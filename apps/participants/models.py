@@ -14,13 +14,11 @@ from apps.abstracts.models import AbstractTimestampedModel
 PARTICIPANT_STATUS_PENDING = 'pending'
 PARTICIPANT_STATUS_ACCEPTED = 'accepted'
 PARTICIPANT_STATUS_REJECTED = 'rejected'
-PARTICIPANT_STATUS_CANCELLED = 'cancelled'
 
 PARTICIPANT_STATUS_CHOICES = [
     (PARTICIPANT_STATUS_PENDING, 'Pending'),
     (PARTICIPANT_STATUS_ACCEPTED, 'Accepted'),
     (PARTICIPANT_STATUS_REJECTED, 'Rejected'),
-    (PARTICIPANT_STATUS_CANCELLED, 'Cancelled'),
 ]
 
 
@@ -170,14 +168,6 @@ class EventParticipant(AbstractTimestampedModel):
         self.status = PARTICIPANT_STATUS_REJECTED
         self.save(update_fields=['status', 'updated_at'])
     
-    def cancel(self) -> None:
-        """
-        Cancel the participation.
-        
-        Changes status to 'cancelled' and saves the instance.
-        """
-        self.status = PARTICIPANT_STATUS_CANCELLED
-        self.save(update_fields=['status', 'updated_at'])
     
     def make_admin(self) -> None:
         """

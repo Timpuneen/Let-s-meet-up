@@ -1,54 +1,70 @@
-"""Admin configuration for category models."""
+"""
+Admin configuration for Category model.
+"""
 
 from django.contrib import admin
+from django.db.models import Count
+from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
+from unfold.decorators import display
 
 from .models import Category, EventCategory
 
 
+class EventCategoryInline(admin.TabularInline):
+    """Inline for event categories."""
+    model = EventCategory
+    extra = 1
+    autocomplete_fields = ['event']
+
+
 @admin.register(Category)
 class CategoryAdmin(ModelAdmin):
-    """
-    Admin interface for Category model.
+    """Admin interface for categories."""
     
-    Provides list display, search, and filtering capabilities
-    for managing categories.
-    """
+    list_display = [
+        'name_badge',
+        'slug',
+        'events_count',
+        'created_date',
+    ]
     
-    list_display = ['name', 'slug', 'events_count', 'created_at']
     search_fields = ['name', 'slug']
-    list_filter = ['created_at']
+    
     ordering = ['name']
-    readonly_fields = ['slug', 'created_at']
+    
+    readonly_fields = ['created_at']
+    
     prepopulated_fields = {'slug': ('name',)}
     
-    def events_count(self, obj: Category) -> int:
-        """
-        Get the number of events in this category.
-        
-        Args:
-            obj: Category instance.
-        
-        Returns:
-            int: Number of events.
-        """
-        return obj.event_categories.count()
-    
-    events_count.short_description = 'Events'
+    inlines = [EventCategoryInline]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(events_total=Count('events'))
+
+    @display(description=_('Category'), ordering='name', header=True)
+    def name_badge(self, obj):
+        return [
+            format_html(
+                '<span style="background:#e0e7ff;color:#4f46e5;padding:6px 14px;border-radius:8px;font-weight:500;">{}</span>',
+                obj.name
+            )
+        ]
 
 
-@admin.register(EventCategory)
-class EventCategoryAdmin(ModelAdmin):
-    """
-    Admin interface for EventCategory model.
-    
-    Provides list display, search, and filtering capabilities
-    for managing event-category relationships.
-    """
-    
-    list_display = ['event', 'category', 'created_at']
-    search_fields = ['event__title', 'category__name']
-    list_filter = ['category', 'created_at']
-    ordering = ['-created_at']
-    readonly_fields = ['created_at']
-    autocomplete_fields = ['event', 'category']
+    @display(description=_('Events'), ordering='events_total')
+    def events_count(self, obj):
+        count = obj.events_total
+        if count > 0:
+            return format_html(
+                '<a href="/admin/events/event/?categories__id__exact={}" style="color:#8b5cf6;font-weight:500;">{} events</a>',
+                obj.pk,
+                count
+            )
+        return format_html('<span style="color:#9ca3af;">0 events</span>')
+
+    @display(description=_('Created'), ordering='created_at')
+    def created_date(self, obj):
+        return obj.created_at.strftime('%b %d, %Y')
