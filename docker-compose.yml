@@ -1,6 +1,10 @@
+# Using Docker Compose Specification (latest standard)
+# Compatible with Docker Compose v2.0+
+
 services:
   db:
     image: postgres:15-alpine
+    container_name: letsmeetup_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -9,11 +13,18 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   web:
     build: .
+    container_name: letsmeetup_web
     command: python manage.py runserver 0.0.0.0:8000
-    working_dir: /app/project
+    working_dir: /app
     volumes:
       - .:/app
     ports:
@@ -27,7 +38,9 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:
