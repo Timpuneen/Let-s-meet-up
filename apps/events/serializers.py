@@ -14,6 +14,7 @@ from rest_framework.serializers import (
     ValidationError,
 )
 
+from apps.categories.serializers import CategorySerializer
 from apps.users.serializers import UserSerializer
 from apps.categories.models import Category
 
@@ -30,6 +31,7 @@ class EventSerializer(ModelSerializer):
     """
 
     organizer = UserSerializer(read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
     country_name = SerializerMethodField()
     city_name = SerializerMethodField()
     category_names = SerializerMethodField()
@@ -39,7 +41,7 @@ class EventSerializer(ModelSerializer):
     class Meta:
         model = Event
         fields = [
-            'id', 'title', 'description', 'address', 'date', 'status',
+            'id', 'title', 'description', 'address','categories', 'date', 'status',
             'invitation_perm', 'max_participants', 'organizer',
             'country', 'country_name', 'city', 'city_name',
             'category_names', 'participants_count', 'is_full',
@@ -112,16 +114,19 @@ class EventListSerializer(ModelSerializer):
     """
 
     organizer = UserSerializer(read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
     city_name = SerializerMethodField()
     participants_count = SerializerMethodField()
 
     class Meta:
         model = Event
         fields = [
-            'id', 'title', 'description', 'date', 'address',
+            'id', 'title', 'description', 'date','categories', 'address',
             'city_name', 'status', 'organizer', 'participants_count',
             'max_participants'
         ]
+
+    
     
     def get_city_name(self, obj):
         """Get city name for the event.
