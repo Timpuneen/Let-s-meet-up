@@ -18,7 +18,7 @@ class ActiveUsersFilter(admin.SimpleListFilter):
     title = _('Activity Status')
     parameter_name = 'activity'
 
-    def lookups(self):
+    def lookups(self, request, model_admin):
         return (
             ('active', _('Active Users')),
             ('inactive', _('Inactive Users')),
@@ -26,7 +26,7 @@ class ActiveUsersFilter(admin.SimpleListFilter):
             ('superusers', _('Superusers')),
         )
 
-    def queryset(self, queryset):
+    def queryset(self, request, queryset):
         if self.value() == 'active':
             return queryset.filter(is_active=True, is_staff=False)
         if self.value() == 'inactive':
@@ -43,13 +43,13 @@ class EventOrganizersFilter(admin.SimpleListFilter):
     title = _('Event Organizers')
     parameter_name = 'has_events'
 
-    def lookups(self):
+    def lookups(self, request, model_admin):
         return (
             ('yes', _('Has Organized Events')),
             ('no', _('No Events Organized')),
         )
 
-    def queryset(self, queryset):
+    def queryset(self, request, queryset):
         if self.value() == 'yes':
             return queryset.annotate(
                 event_count=Count('organized_events')
