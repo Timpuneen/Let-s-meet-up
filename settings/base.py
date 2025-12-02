@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'apps.friendships',
     'apps.categories',
     'apps.participants',
+    'apps.invitations',  # NEW: Invitations app
     'apps.media',
     'apps.comments',
 ]
@@ -153,7 +154,6 @@ SIMPLE_JWT = {
 }
 
 # Django Unfold settings (Admin UI)
-# Django Unfold settings (Admin UI)
 UNFOLD = {
     "SITE_TITLE": "Let's Meet Up",
     "SITE_HEADER": "Let's Meet Up Administration",
@@ -224,6 +224,12 @@ UNFOLD = {
                         "title": "Participants",
                         "icon": "group",
                         "link": lambda request: "/admin/participants/eventparticipant/",
+                    },
+                    {
+                        "title": "Invitations",  # NEW
+                        "icon": "mail",
+                        "link": lambda request: "/admin/invitations/eventinvitation/",
+                        "badge": lambda request: EventInvitation.objects.filter(status='pending').count() if 'EventInvitation' in globals() else 0,
                     },
                     {
                         "title": "Categories",
@@ -305,6 +311,10 @@ UNFOLD = {
                 {
                     "title": "Participants",
                     "link": lambda request, instance=None: f"/admin/participants/eventparticipant/?event__id__exact={instance.pk}" if instance else None,
+                },
+                {
+                    "title": "Invitations",  # NEW
+                    "link": lambda request, instance=None: f"/admin/invitations/eventinvitation/?event__id__exact={instance.pk}" if instance else None,
                 },
                 {
                     "title": "Comments",
