@@ -172,7 +172,7 @@ class TestEventUpdateView:
             'address': event.address,
             'status': event.status,
         }
-        response = authenticated_client.patch(url, update_data, format='json')
+        response = authenticated_client.put(url, update_data, format='json')
         
         assert response.status_code == status.HTTP_200_OK
         assert response.data['title'] == 'Updated Title'
@@ -185,7 +185,7 @@ class TestEventUpdateView:
         """Test updating event by non-organizer (Bad case 1)."""
         url = reverse('events:event-detail', kwargs={'pk': event.id})
         update_data = {'title': 'Hacked Title'}
-        response = another_authenticated_client.patch(url, update_data, format='json')
+        response = another_authenticated_client.put(url, update_data, format='json')
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
     
@@ -208,7 +208,7 @@ class TestEventUpdateView:
         
         url = reverse('events:event-detail', kwargs={'pk': event.id})
         update_data = {'max_participants': 0}  # Current count is 1
-        response = authenticated_client.patch(url, update_data, format='json')
+        response = authenticated_client.put(url, update_data, format='json')
         
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -468,3 +468,131 @@ class TestMyRegisteredEventsView:
         
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data['results']) == 0  # Pending not included
+
+
+# ==================== CATEGORY INTEGRATION TESTS ====================
+
+@pytest.mark.django_db
+class TestEventCategoryIntegration:
+    """Test suite for event-category integration."""
+    
+    def test_create_event_with_categories(self, authenticated_client, event_data, category, another_category):
+        """Test creating event with multiple categories."""
+        url = reverse('events:event-list')
+        event_data['category_ids'] = [category.id, another_category.id]
+        response = authenticated_client.post(url, event_data, format='json')
+        
+        assert response.status_code == status.HTTP_201_CREATED
+        
+        # Verify categories in database
+        created_event = Event.objects.get(title=event_data['title'])
+        assert created_event.categories.count() == 2
+        assert category in created_event.categories.all()
+        assert another_category in created_event.categories.all()
+    
+    def test_create_event_without_categories(self, authenticated_client, event_data):
+        """Test creating event without categories is allowed."""
+        url = reverse('events:event-list')
+        event_data.pop('category_ids', None)
+        response = authenticated_client.post(url, event_data, format='json')
+        
+        assert response.status_code == status.HTTP_201_CREATED
+        
+        created_event = Event.objects.get(title=event_data['title'])
+        assert created_event.categories.count() == 0
+    
+    def test_create_event_with_invalid_category(self, authenticated_client, event_data):
+        """Test creating event with non-existent category fails."""
+        url = reverse('events:event-list')
+        event_data['category_ids'] = [99999]  # Non-existent
+        response = authenticated_client.post(url, event_data, format='json')
+        
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'category_ids' in response.data
+    
+    def test_update_event_categories(self, authenticated_client, event, another_category):
+        """Test updating event categories."""
+        url = reverse('events:event-detail', kwargs={'pk': event.id})
+        
+        # Event already has one category, add another
+        update_data = {
+            'category_ids': [another_category.id]
+        }
+        response = authenticated_client.patch(url, update_data, format='json')
+        
+        assert response.status_code == status.HTTP_200_OK
+        
+        event.refresh_from_db()
+        assert event.categories.count() == 1
+        assert another_category in event.categories.all()
+    
+    def test_update_event_add_multiple_categories(self, authenticated_client, event, category, another_category):
+        """Test adding multiple categories to existing event."""
+        url = reverse('events:event-detail', kwargs={'pk': event.id})
+        
+        update_data = {
+            'category_ids': [category.id, another_category.id]
+        }
+        response = authenticated_client.patch(url, update_data, format='json')
+        
+        assert response.status_code == status.HTTP_200_OK
+        
+        event.refresh_from_db()
+        assert event.categories.count() == 2
+    
+    def test_update_event_clear_categories(self, authenticated_client, event):
+        """Test clearing all categories from event."""
+        url = reverse('events:event-detail', kwargs={'pk': event.id})
+        
+        update_data = {
+            'category_ids': []
+        }
+        response = authenticated_client.patch(url, update_data, format='json')
+        
+        assert response.status_code == status.HTTP_200_OK
+        
+        event.refresh_from_db()
+        assert event.categories.count() == 0
+    
+    def test_retrieve_event_shows_categories(self, api_client, event, another_category):
+        """Test that event details include categories information."""
+        event.categories.add(another_category)
+        
+        url = reverse('events:event-detail', kwargs={'pk': event.id})
+        response = api_client.get(url)
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert 'categories' in response.data
+        assert 'category_names' in response.data
+        assert len(response.data['categories']) == 2
+        assert len(response.data['category_names']) == 2
+        assert 'Technology' in response.data['category_names']
+        assert 'Sports' in response.data['category_names']
+    
+    def test_list_events_shows_categories(self, api_client, event):
+        """Test that event list includes categories."""
+        url = reverse('events:event-list')
+        response = api_client.get(url)
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['results']) > 0
+        
+        event_data = response.data['results'][0]
+        assert 'categories' in event_data
+        assert len(event_data['categories']) >= 1
+    
+    def test_event_categories_serializer_format(self, api_client, event):
+        """Test that categories are properly serialized with full details."""
+        url = reverse('events:event-detail', kwargs={'pk': event.id})
+        response = api_client.get(url)
+        
+        assert response.status_code == status.HTTP_200_OK
+        
+        categories = response.data['categories']
+        assert len(categories) > 0
+        
+        # Check category has required fields
+        first_category = categories[0]
+        assert 'id' in first_category
+        assert 'name' in first_category
+        assert 'slug' in first_category

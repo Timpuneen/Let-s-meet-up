@@ -209,6 +209,31 @@ class EventViewSet(ViewSet):
     
     @extend_schema(
         tags=['Events'],
+        summary='Partial update event',
+        description='Partially update event fields. Only the organizer can update the event.',
+        request=EventUpdateSerializer,
+        responses={
+            200: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
+            400: OpenApiResponse(description='Invalid input data'),
+            401: OpenApiResponse(description='Authentication required'),
+            403: OpenApiResponse(description='Not the organizer'),
+            404: OpenApiResponse(description='Event not found'),
+        },
+    )
+    def partial_update(self, request, pk=None):
+        """
+        Partially update an event.
+        
+        Args:
+            pk: Event ID.
+        
+        Returns:
+            Response: Updated event data (200) or errors.
+        """
+        return self.update(request, pk=pk)
+    
+    @extend_schema(
+        tags=['Events'],
         summary='Delete event (soft delete)',
         description='Soft delete an event. Only the organizer can delete the event.',
         responses={
