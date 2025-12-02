@@ -23,14 +23,11 @@ urlpatterns = [
     path('api/categories/', include('apps.categories.urls')),
     path('api/comments/', include('apps.comments.urls')),
     path('api/photos/', include('apps.media.urls')),
+    path('api/invitations/', include('apps.invitations.urls')),
 
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-    
-    path('api/', include('apps.users.urls')),
-    path('api/', include('apps.invitations.urls')),  
-    path('api/', include('apps.events.urls')),
 ]
 
 if settings.DEBUG:
