@@ -109,7 +109,7 @@ class EventInvitation(AbstractTimestampedModel):
         Ensures that:
         - Event is not deleted.
         - User is not the organizer.
-        - User is not already a participant.
+        - User is not already a participant (только для pending инвайтов).
         - Invited_by has permission to invite.
         
         Raises:
@@ -121,13 +121,14 @@ class EventInvitation(AbstractTimestampedModel):
         if self.invited_user == self.event.organizer:
             raise ValidationError('Cannot invite the organizer')
         
-        # Check if user is already a participant
-        from apps.participants.models import EventParticipant
-        if EventParticipant.objects.filter(
-            event=self.event,
-            user=self.invited_user
-        ).exists():
-            raise ValidationError('User is already a participant of this event')
+        # Check if user is already a participant - ТОЛЬКО ДЛЯ PENDING ИНВАЙТОВ
+        if self.status == INVITATION_STATUS_PENDING:
+            from apps.participants.models import EventParticipant
+            if EventParticipant.objects.filter(
+                event=self.event,
+                user=self.invited_user
+            ).exists():
+                raise ValidationError('User is already a participant of this event')
         
         # Check if inviter has permission
         if not self.event.can_user_invite(self.invited_by):
@@ -161,7 +162,17 @@ class EventInvitation(AbstractTimestampedModel):
         
         from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
         
-        # Create participant record
+        # Проверяем, не является ли пользователь уже участником
+        if EventParticipant.objects.filter(
+            event=self.event,
+            user=self.invited_user
+        ).exists():
+            # Если уже участник, просто обновляем статус инвайта
+            self.status = INVITATION_STATUS_ACCEPTED
+            super(EventInvitation, self).save(update_fields=['status', 'updated_at'])
+            return
+        
+        # Создаем участника
         EventParticipant.objects.create(
             event=self.event,
             user=self.invited_user,
@@ -169,9 +180,18 @@ class EventInvitation(AbstractTimestampedModel):
             is_admin=False,
         )
         
+        # Обновляем статус инвайта
         self.status = INVITATION_STATUS_ACCEPTED
-        self.save(update_fields=['status', 'updated_at'])
-    
+        
+        # Сохраняем БЕЗ clean() - используем raw_save чтобы избежать валидации
+        from django.db import connection
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE event_invitations SET status = %s, updated_at = NOW() WHERE id = %s",
+                [INVITATION_STATUS_ACCEPTED, self.id]
+            )
+        
     def reject(self) -> None:
         """
         Reject the invitation.
