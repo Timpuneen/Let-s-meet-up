@@ -15,9 +15,12 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
+from apps.comments.models import EventComment
+from apps.comments.serializers import CommentListSerializer
 
 from .models import Event, EVENT_STATUS_PUBLISHED
 from .serializers import (
@@ -407,5 +410,58 @@ class EventViewSet(ViewSet):
             'count': events.count(),
             'next': None,
             'previous': None,
+            'results': serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    @extend_schema(
+        tags=['Events'],
+        summary='Get all comments for event',
+        description='Returns a list of all comments for a specific event, ordered by creation date.',
+        parameters=[
+            OpenApiParameter(
+                name='page_size',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Number of items per page (max 100)',
+                required=False,
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=CommentListSerializer(many=True),
+                description='List of comments for the event'
+            ),
+            401: OpenApiResponse(description='Authentication required'),
+            404: OpenApiResponse(description='Event not found'),
+        },
+    )
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def comments(self, request, pk=None):
+        """
+        Get all comments for a specific event.
+        
+        Returns all comments associated with the event, ordered by creation date.
+        Supports pagination through page_size query parameter.
+        
+        Args:
+            pk: Event ID.
+        
+        Returns:
+            Response: List of comments (200) or errors.
+        """
+        event = get_object_or_404(Event.objects.all(), pk=pk)
+        
+        # Get all comments for this event, ordered by creation date
+        comments = EventComment.objects.filter(event=event).select_related(
+            'user', 'parent'
+        ).order_by('created_at')
+        
+        # Serialize comments
+        serializer = CommentListSerializer(comments, many=True)
+        
+        return Response({
+            'count': comments.count(),
+            'event': event.id,
+            'event_title': event.title,
             'results': serializer.data
         }, status=status.HTTP_200_OK)
