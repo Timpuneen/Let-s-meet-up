@@ -9,11 +9,11 @@ class CanInviteToEvent(BasePermission):
     Checks event.can_user_invite() logic.
     """
     
-    def has_permission(self, request):
+    def has_permission(self, request, view):
         """Check if user is authenticated."""
         return request.user and request.user.is_authenticated
     
-    def has_object_permission(self, request, obj):
+    def has_object_permission(self, request, view, obj):
         """
         Check if user can invite to the event.
         
@@ -36,11 +36,11 @@ class IsInvitedUserOrInviterOrReadOnly(BasePermission):
     - Inviter can view but cannot modify
     """
     
-    def has_permission(self, request):
+    def has_permission(self, request, view):
         """Check if user is authenticated."""
         return request.user and request.user.is_authenticated
     
-    def has_object_permission(self, request, obj):
+    def has_object_permission(self, request, view, obj):
         """
         Check if user is involved in the invitation.
         
@@ -69,11 +69,11 @@ class IsInvitedUser(BasePermission):
     Used for accept/reject actions.
     """
     
-    def has_permission(self, request):
+    def has_permission(self, request, view):
         """Check if user is authenticated."""
         return request.user and request.user.is_authenticated
     
-    def has_object_permission(self, request, obj):
+    def has_object_permission(self, request, view, obj):
         """
         Check if user is the invited user.
         
@@ -95,11 +95,11 @@ class IsEventParticipant(BasePermission):
     Used to verify user can invite others based on event settings.
     """
     
-    def has_permission(self, request):
+    def has_permission(self, request, view):
         """Check if user is authenticated."""
         return request.user and request.user.is_authenticated
     
-    def has_object_permission(self, request, obj):
+    def has_object_permission(self, request, view, obj):
         """
         Check if user is a participant of the event.
         
