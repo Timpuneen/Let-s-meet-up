@@ -1,8 +1,10 @@
 asgiref==3.10.0
 attrs==25.4.0
+diff-match-patch==20241021
 Django==5.2.7
 django-cors-headers==4.6.0
 django-environ==0.11.2
+django-import-export==4.3.14
 django-unfold==0.28.0
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
@@ -19,6 +21,7 @@ PyYAML==6.0.3
 referencing==0.37.0
 rpds-py==0.27.1
 sqlparse==0.5.3
+tablib==3.9.0
 typing_extensions==4.15.0
 tzdata==2025.2
 uritemplate==4.2.0

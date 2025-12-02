@@ -16,13 +16,11 @@ from apps.abstracts.models import AbstractTimestampedModel
 FRIENDSHIP_STATUS_PENDING = 'pending'
 FRIENDSHIP_STATUS_ACCEPTED = 'accepted'
 FRIENDSHIP_STATUS_REJECTED = 'rejected'
-FRIENDSHIP_STATUS_BLOCKED = 'blocked'
 
 FRIENDSHIP_STATUS_CHOICES = [
     (FRIENDSHIP_STATUS_PENDING, 'Pending'),
     (FRIENDSHIP_STATUS_ACCEPTED, 'Accepted'),
     (FRIENDSHIP_STATUS_REJECTED, 'Rejected'),
-    (FRIENDSHIP_STATUS_BLOCKED, 'Blocked'),
 ]
 
 
@@ -146,15 +144,6 @@ class Friendship(AbstractTimestampedModel):
         Changes status to 'rejected' and saves the instance.
         """
         self.status = FRIENDSHIP_STATUS_REJECTED
-        self.save(update_fields=['status', 'updated_at'])
-    
-    def block(self) -> None:
-        """
-        Block the user.
-        
-        Changes status to 'blocked' and saves the instance.
-        """
-        self.status = FRIENDSHIP_STATUS_BLOCKED
         self.save(update_fields=['status', 'updated_at'])
     
     @classmethod
