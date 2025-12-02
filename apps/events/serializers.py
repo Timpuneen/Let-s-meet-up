@@ -5,6 +5,9 @@ This module contains serializers for creating, updating, and displaying events
 with proper validation, optimization, and nested relationships.
 """
 
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+
 from django.utils import timezone
 
 from rest_framework.serializers import (
@@ -49,7 +52,7 @@ class EventSerializer(ModelSerializer):
         ]
         read_only_fields = ['id', 'organizer', 'created_at', 'updated_at']
     
-    def get_country_name(self, obj):
+    def get_country_name(self, obj: Event) -> Optional[str]:
         """Get country name for the event.
         
         Args:
@@ -60,7 +63,7 @@ class EventSerializer(ModelSerializer):
         """
         return obj.country.name if obj.country else None
     
-    def get_city_name(self, obj):
+    def get_city_name(self, obj: Event) -> Optional[str]:
         """Get city name for the event.
         
         Args:
@@ -71,7 +74,7 @@ class EventSerializer(ModelSerializer):
         """
         return obj.city.name if obj.city else None
     
-    def get_category_names(self, obj):
+    def get_category_names(self, obj: Event) -> List[str]:
         """Get list of category names for the event.
         
         Args:
@@ -82,7 +85,7 @@ class EventSerializer(ModelSerializer):
         """
         return [category.name for category in obj.categories.all()]
 
-    def get_participants_count(self, obj):
+    def get_participants_count(self, obj: Event) -> int:
         """Return the number of accepted participants for the event.
         
         Args:
@@ -93,7 +96,7 @@ class EventSerializer(ModelSerializer):
         """
         return obj.get_participants_count()
 
-    def get_is_full(self, obj):
+    def get_is_full(self, obj: Event) -> bool:
         """Check if the event has reached maximum capacity.
         
         Args:
@@ -128,7 +131,7 @@ class EventListSerializer(ModelSerializer):
 
     
     
-    def get_city_name(self, obj):
+    def get_city_name(self, obj: Event) -> Optional[str]:
         """Get city name for the event.
         
         Args:
@@ -139,7 +142,7 @@ class EventListSerializer(ModelSerializer):
         """
         return obj.city.name if obj.city else None
 
-    def get_participants_count(self, obj):
+    def get_participants_count(self, obj: Event) -> int:
         """Return the number of accepted participants for the event.
         
         Args:
@@ -177,7 +180,7 @@ class EventCreateSerializer(ModelSerializer):
             'category_ids'
         ]
 
-    def validate_date(self, value):
+    def validate_date(self, value: datetime) -> datetime:
         """Validate that the event date is in the future.
         
         Args:
@@ -193,7 +196,7 @@ class EventCreateSerializer(ModelSerializer):
             raise ValidationError('Event date must be in the future')
         return value
     
-    def validate_max_participants(self, value):
+    def validate_max_participants(self, value: Optional[int]) -> Optional[int]:
         """Validate that max participants is positive.
         
         Args:
@@ -209,7 +212,7 @@ class EventCreateSerializer(ModelSerializer):
             raise ValidationError('Maximum participants must be at least 1')
         return value
     
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate city belongs to country if both provided.
         
         Args:
@@ -231,7 +234,7 @@ class EventCreateSerializer(ModelSerializer):
         
         return data
     
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> Event:
         """Create a new event with categories.
         
         Args:
@@ -273,7 +276,7 @@ class EventUpdateSerializer(ModelSerializer):
             'category_ids'
         ]
 
-    def validate_date(self, value):
+    def validate_date(self, value: datetime) -> datetime:
         """Validate that the event date is in the future.
         
         Args:
@@ -289,7 +292,7 @@ class EventUpdateSerializer(ModelSerializer):
             raise ValidationError('Event date must be in the future')
         return value
     
-    def validate_max_participants(self, value):
+    def validate_max_participants(self, value: Optional[int]) -> Optional[int]:
         """Validate that max participants is positive and not less than current count.
         
         Args:
@@ -317,7 +320,7 @@ class EventUpdateSerializer(ModelSerializer):
         
         return value
     
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate city belongs to country if both provided.
         
         Args:
@@ -343,7 +346,7 @@ class EventUpdateSerializer(ModelSerializer):
         
         return data
     
-    def update(self, instance, validated_data):
+    def update(self, instance: Event, validated_data: Dict[str, Any]) -> Event:
         """Update an event with new data including categories.
         
         Args:
