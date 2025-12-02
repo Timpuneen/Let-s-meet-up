@@ -5,6 +5,10 @@ from apps.abstracts.models import AbstractSoftDeletableModel, AbstractTimestampe
 
 from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
 
+TITLE_MAX_LENGTH = 255
+ADDRESS_MAX_LENGTH = 255
+STATUS_MAX_LENGTH = 50
+INVITATION_PERM_MAX_LENGTH = 50
 
 EVENT_STATUS_PUBLISHED = 'published'
 EVENT_STATUS_CANCELLED = 'cancelled'
@@ -54,7 +58,7 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
     """
     
     title = models.CharField(
-        max_length=255,
+        max_length=TITLE_MAX_LENGTH,
         verbose_name='Title',
         help_text='Event title',
     )
@@ -63,7 +67,7 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         help_text='Detailed event description',
     )
     address = models.CharField(
-        max_length=255,
+        max_length=ADDRESS_MAX_LENGTH,
         verbose_name='Address',
         help_text='Physical address of the event venue',
         null=True,
@@ -74,14 +78,14 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         help_text='When the event will take place',
     )
     status = models.CharField(
-        max_length=50,
+        max_length=STATUS_MAX_LENGTH,
         choices=EVENT_STATUS_CHOICES,
         default=EVENT_STATUS_PUBLISHED,
         verbose_name='Status',
         help_text='Current status of the event',
     )
     invitation_perm = models.CharField(
-        max_length=50,
+        max_length=INVITATION_PERM_MAX_LENGTH,
         choices=INVITATION_PERM_CHOICES,
         default=INVITATION_PERM_PARTICIPANTS,
         verbose_name='Invitation Permission',

@@ -3,6 +3,9 @@ from django.utils.text import slugify
 
 from apps.abstracts.models import AbstractTimestampedModel
 
+CATEGORY_NAME_MAX_LENGTH = 100
+CATEGORY_SLUG_MAX_LENGTH = 100
+
 
 class Category(AbstractTimestampedModel):
     """
@@ -18,13 +21,13 @@ class Category(AbstractTimestampedModel):
     """
     
     name = models.CharField(
-        max_length=100,
+        max_length=CATEGORY_NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Category Name',
         help_text='Human-readable name of the category',
     )
     slug = models.SlugField(
-        max_length=100,
+        max_length=CATEGORY_SLUG_MAX_LENGTH,
         unique=True,
         verbose_name='Slug',
         help_text='URL-friendly identifier for the category',

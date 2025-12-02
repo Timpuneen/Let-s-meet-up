@@ -2,6 +2,10 @@ from django.db import models
 
 from apps.abstracts.models import AbstractTimestampedModel
 
+COUNTRY_NAME_MAX_LENGTH = 100
+COUNTRY_CODE_MAX_LENGTH = 2
+CITY_NAME_MAX_LENGTH = 100
+
 
 class Country(AbstractTimestampedModel):
     """
@@ -14,13 +18,13 @@ class Country(AbstractTimestampedModel):
     """
     
     name = models.CharField(
-        max_length=100,
+        max_length=COUNTRY_NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Country Name',
         help_text='Full name of the country',
     )
     code = models.CharField(
-        max_length=2,
+        max_length=COUNTRY_CODE_MAX_LENGTH,
         unique=True,
         verbose_name='Country Code',
         help_text='ISO 3166-1 alpha-2 country code',
@@ -66,7 +70,7 @@ class City(AbstractTimestampedModel):
     """
     
     name = models.CharField(
-        max_length=100,
+        max_length=CITY_NAME_MAX_LENGTH,
         verbose_name='City Name',
         help_text='Name of the city',
     )

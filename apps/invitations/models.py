@@ -1,8 +1,12 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, connection
 from django.core.exceptions import ValidationError
 
 from apps.abstracts.models import AbstractTimestampedModel
+from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
+
+
+INVITATION_STATUS_MAX_LENGTH = 20
 
 INVITATION_STATUS_PENDING = 'pending'
 INVITATION_STATUS_ACCEPTED = 'accepted'
@@ -53,7 +57,7 @@ class EventInvitation(AbstractTimestampedModel):
         help_text='User who sent the invitation',
     )
     status = models.CharField(
-        max_length=20,
+        max_length=INVITATION_STATUS_MAX_LENGTH,
         choices=INVITATION_STATUS_CHOICES,
         default=INVITATION_STATUS_PENDING,
         verbose_name='Status',
@@ -115,7 +119,6 @@ class EventInvitation(AbstractTimestampedModel):
             raise ValidationError('Cannot invite the organizer')
         
         if self.status == INVITATION_STATUS_PENDING:
-            from apps.participants.models import EventParticipant
             if EventParticipant.objects.filter(
                 event=self.event,
                 user=self.invited_user
@@ -150,9 +153,7 @@ class EventInvitation(AbstractTimestampedModel):
         
         if self.event.is_full():
             raise ValidationError('Event has reached maximum capacity')
-        
-        from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
-        
+                
         if EventParticipant.objects.filter(
             event=self.event,
             user=self.invited_user
@@ -169,9 +170,7 @@ class EventInvitation(AbstractTimestampedModel):
         )
         
         self.status = INVITATION_STATUS_ACCEPTED
-        
-        from django.db import connection
-        
+                
         with connection.cursor() as cursor:
             cursor.execute(
                 "UPDATE event_invitations SET status = %s, updated_at = NOW() WHERE id = %s",

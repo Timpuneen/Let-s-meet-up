@@ -4,6 +4,9 @@ from django.core.exceptions import ValidationError
 
 from apps.abstracts.models import AbstractTimestampedModel, AbstractSoftDeletableModel, SoftDeletableManager
 
+CONTENT_PREVIEW_MAX_LENGTH = 50
+MAX_REPLY_DEPTH = 10
+
 
 class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
     """
@@ -70,7 +73,7 @@ class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
         Returns:
             str: User name and truncated content.
         """
-        content_preview = self.content[:50] + '...' if len(self.content) > 50 else self.content
+        content_preview = self.content[:CONTENT_PREVIEW_MAX_LENGTH] + '...' if len(self.content) > CONTENT_PREVIEW_MAX_LENGTH else self.content
         return f"{self.user.name}: {content_preview}"
     
     def __repr__(self) -> str:
@@ -106,14 +109,13 @@ class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
             
             depth = 0
             current = self.parent
-            max_depth = 10
             
-            while current and depth < max_depth:
+            while current and depth < MAX_REPLY_DEPTH:
                 depth += 1
                 current = current.parent
             
-            if depth >= max_depth:
-                raise ValidationError(f'Reply depth cannot exceed {max_depth} levels')
+            if depth >= MAX_REPLY_DEPTH:
+                raise ValidationError(f'Reply depth cannot exceed {MAX_REPLY_DEPTH} levels')
     
     def save(self, *args, **kwargs) -> None:
         """

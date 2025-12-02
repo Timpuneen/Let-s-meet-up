@@ -10,6 +10,8 @@ PARTICIPANT_STATUS_CHOICES = [
     (PARTICIPANT_STATUS_ACCEPTED, 'Accepted'),
 ]
 
+PARTICIPANT_STATUS_MAX_LENGTH = 20
+
 
 class EventParticipant(AbstractTimestampedModel):
     """
@@ -42,7 +44,7 @@ class EventParticipant(AbstractTimestampedModel):
         help_text='Participating user',
     )
     status = models.CharField(
-        max_length=20,
+        max_length=PARTICIPANT_STATUS_MAX_LENGTH,
         choices=PARTICIPANT_STATUS_CHOICES,
         default=PARTICIPANT_STATUS_ACCEPTED,
         verbose_name='Status',

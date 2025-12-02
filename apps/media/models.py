@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 
 from apps.abstracts.models import AbstractTimestampedModel, AbstractSoftDeletableModel, SoftDeletableManager
 
+PHOTO_URL_MAX_LENGTH = 500
+
 
 class EventPhoto(AbstractTimestampedModel, AbstractSoftDeletableModel):
     """
@@ -36,7 +38,7 @@ class EventPhoto(AbstractTimestampedModel, AbstractSoftDeletableModel):
         help_text='User who uploaded this photo',
     )
     url = models.CharField(
-        max_length=500,
+        max_length=PHOTO_URL_MAX_LENGTH,
         verbose_name='Photo URL',
         help_text='URL or path to the photo file',
     )

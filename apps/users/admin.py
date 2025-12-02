@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Count, Q
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -11,7 +10,7 @@ from unfold.contrib.filters.admin import (
 )
 from import_export.admin import ImportExportModelAdmin
 
-from .models import User, INVITATION_PRIVACY_CHOICES
+from .models import User
 
 
 class ActiveUsersFilter(admin.SimpleListFilter):
@@ -19,7 +18,7 @@ class ActiveUsersFilter(admin.SimpleListFilter):
     title = _('Activity Status')
     parameter_name = 'activity'
 
-    def lookups(self, request, model_admin):
+    def lookups(self):
         return (
             ('active', _('Active Users')),
             ('inactive', _('Inactive Users')),
@@ -27,7 +26,7 @@ class ActiveUsersFilter(admin.SimpleListFilter):
             ('superusers', _('Superusers')),
         )
 
-    def queryset(self, request, queryset):
+    def queryset(self, queryset):
         if self.value() == 'active':
             return queryset.filter(is_active=True, is_staff=False)
         if self.value() == 'inactive':
@@ -44,13 +43,13 @@ class EventOrganizersFilter(admin.SimpleListFilter):
     title = _('Event Organizers')
     parameter_name = 'has_events'
 
-    def lookups(self, request, model_admin):
+    def lookups(self):
         return (
             ('yes', _('Has Organized Events')),
             ('no', _('No Events Organized')),
         )
 
-    def queryset(self, request, queryset):
+    def queryset(self, queryset):
         if self.value() == 'yes':
             return queryset.annotate(
                 event_count=Count('organized_events')
@@ -253,11 +252,11 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
 
     @display(description=_('Friends'), ordering='friendships_count')
     def friends_count(self, obj):
-        """Display count of friends."""
         count = obj.friendships_count
         if count > 0:
             return format_html(
-                '<span style="color:#22c55e;font-weight:500;">{} friends</span>',
+                '<a href="/admin/friendships/friendship/?q={}" style="color:#8b5cf6;font-weight:500;">{} friends</a>',
+                obj.email,
                 count
             )
         return format_html('<span style="color:#9ca3af;">0 friends</span>')

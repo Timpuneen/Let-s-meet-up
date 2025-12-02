@@ -11,7 +11,7 @@ from unfold.contrib.filters.admin import (
 )
 from import_export.admin import ImportExportModelAdmin
 
-from .models import Event, EVENT_STATUS_CHOICES
+from .models import Event
 from apps.participants.models import EventParticipant
 from apps.comments.models import EventComment
 from apps.media.models import EventPhoto
@@ -95,6 +95,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         'title_with_status',
         'organizer_link',
         'location_info',
+        'address',
         'event_date',
         'status_badge',
         'capacity_info',

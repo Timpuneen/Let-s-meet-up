@@ -82,7 +82,6 @@ class AbstractSoftDeletableModel(models.Model):
     def delete(
         self,
         using: str | None = None,
-        keep_parents: bool = False
     ) -> Tuple[int, Dict[str, int]]:
         """
         Soft delete the object by marking it as deleted.

@@ -6,6 +6,10 @@ from django.db import models
 from apps.abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel, SoftDeletableManager
 from apps.friendships.models import Friendship, FRIENDSHIP_STATUS_ACCEPTED
 
+MAX_EMAIL_LENGTH = 255
+MAX_NAME_LENGTH = 255
+INVITATION_PRIVACY_MAX_LENGTH = 20
+
 INVITATION_PRIVACY_EVERYONE = 'everyone'
 INVITATION_PRIVACY_FRIENDS = 'friends'
 INVITATION_PRIVACY_NONE = 'none'
@@ -119,13 +123,13 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
     """
     
     email = models.EmailField(
-        max_length=255,
+        max_length=MAX_EMAIL_LENGTH,
         unique=True,
         verbose_name='Email Address',
         help_text='Unique email address used for authentication',
     )
     name = models.CharField(
-        max_length=255,
+        max_length=MAX_NAME_LENGTH,
         verbose_name='Name',
         help_text="User's display name",
     )
@@ -140,7 +144,7 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
         help_text='Designates whether the user can log into the admin site',
     )
     invitation_privacy = models.CharField(
-        max_length=20,
+        max_length=INVITATION_PRIVACY_MAX_LENGTH,
         choices=INVITATION_PRIVACY_CHOICES,
         default=INVITATION_PRIVACY_EVERYONE,
         verbose_name='Invitation Privacy',
@@ -199,4 +203,4 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
                 status=FRIENDSHIP_STATUS_ACCEPTED
             ).exists()
         
-        return False  
+        return False
