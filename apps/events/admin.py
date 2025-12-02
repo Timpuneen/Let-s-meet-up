@@ -1,7 +1,3 @@
-"""
-Admin configuration for Event model with Unfold.
-"""
-
 from django.contrib import admin
 from django.db.models import Count, Q
 from django.utils.html import format_html
@@ -10,7 +6,6 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
 from unfold.contrib.filters.admin import (
-    RangeDateFilter,
     RangeDateTimeFilter,
     RelatedDropdownFilter,
 )
@@ -190,8 +185,6 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             comments_count=Count('comments', distinct=True),
             photos_count=Count('photos', distinct=True),
         )
-
-    # Display methods
 
     @display(description=_('Event'), ordering='title', header=True)
     def title_with_status(self, obj):

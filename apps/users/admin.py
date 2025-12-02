@@ -1,7 +1,3 @@
-"""
-Admin configuration for User model with Unfold.
-"""
-
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Count, Q
@@ -11,7 +7,6 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import display
 from unfold.contrib.filters.admin import (
-    RangeDateFilter,
     RangeDateTimeFilter,
 )
 from import_export.admin import ImportExportModelAdmin
@@ -197,7 +192,6 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
         elif obj.is_staff:
             badges.append('<span style="background:#3b82f6;color:white;padding:2px 8px;border-radius:4px;font-size:10px;margin-left:8px;">STAFF</span>')
         
-        # Use mark_safe for header columns
         return [mark_safe(
             f'<strong>{obj.email}</strong>{"".join(badges)}'
         )]

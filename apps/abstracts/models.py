@@ -1,11 +1,4 @@
-"""
-Abstract base models for the project.
-
-This module provides reusable abstract models that can be inherited
-by concrete models throughout the application.
-"""
-
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict
 
 from django.db import models
 from django.utils import timezone
@@ -19,9 +12,9 @@ class SoftDeletableManager(models.Manager):
     to include deleted objects in querysets.
     
     Examples:
-        Model.objects.all()  # Only non-deleted objects
-        Model.objects.with_deleted()  # All objects including deleted
-        Model.objects.deleted_only()  # Only deleted objects
+        Model.objects.all()   Only non-deleted objects
+        Model.objects.with_deleted()   All objects including deleted
+        Model.objects.deleted_only()   Only deleted objects
     """
     
     def get_queryset(self) -> models.QuerySet:

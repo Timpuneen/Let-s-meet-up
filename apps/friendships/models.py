@@ -1,10 +1,3 @@
-"""
-Friendship models for managing user relationships.
-
-This module contains models for handling friend requests
-and friendship status between users.
-"""
-
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -12,7 +5,6 @@ from django.core.exceptions import ValidationError
 from apps.abstracts.models import AbstractTimestampedModel
 
 
-# Constants for friendship status choices
 FRIENDSHIP_STATUS_PENDING = 'pending'
 FRIENDSHIP_STATUS_ACCEPTED = 'accepted'
 FRIENDSHIP_STATUS_REJECTED = 'rejected'
@@ -105,8 +97,7 @@ class Friendship(AbstractTimestampedModel):
         if self.sender == self.receiver:
             raise ValidationError('Users cannot be friends with themselves')
         
-        # Check for existing friendship in opposite direction
-        if self.pk is None:  # Only check on creation
+        if self.pk is None: 
             opposite_exists = Friendship.objects.filter(
                 sender=self.receiver,
                 receiver=self.sender
@@ -176,13 +167,11 @@ class Friendship(AbstractTimestampedModel):
         """
         from users.models import User
         
-        # Get all accepted friendships where user is either sender or receiver
         friendships = cls.objects.filter(
             models.Q(sender=user) | models.Q(receiver=user),
             status=FRIENDSHIP_STATUS_ACCEPTED
         )
         
-        # Extract friend IDs
         friend_ids = []
         for friendship in friendships:
             if friendship.sender == user:

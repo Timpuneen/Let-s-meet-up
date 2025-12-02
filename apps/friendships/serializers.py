@@ -1,10 +1,3 @@
-"""
-Serializers for Friendship management.
-
-This module contains serializers for creating, updating, and displaying
-friendships with proper validation and nested relationships.
-"""
-
 from django.db import models
 
 from rest_framework.serializers import (
@@ -141,7 +134,6 @@ class FriendshipCreateSerializer(ModelSerializer):
         sender = request.user
         receiver_email = data.get('receiver_email')
         
-        # Get receiver by email
         try:
             receiver = User.objects.get(email=receiver_email, is_deleted=False)
         except User.DoesNotExist:
@@ -149,13 +141,11 @@ class FriendshipCreateSerializer(ModelSerializer):
                 'receiver_email': 'User with this email does not exist'
             })
         
-        # Check if trying to add yourself
         if sender == receiver:
             raise ValidationError({
                 'receiver_email': 'You cannot send friend request to yourself'
             })
         
-        # Check if friendship already exists (any direction, any status)
         existing_friendship = Friendship.objects.filter(
             models.Q(sender=sender, receiver=receiver) | 
             models.Q(sender=receiver, receiver=sender)
@@ -175,11 +165,9 @@ class FriendshipCreateSerializer(ModelSerializer):
                 raise ValidationError({
                     'receiver_email': 'You are already friends with this user'
                 })
-            else:  # rejected
-                # Allow resending after rejection
+            else:  
                 pass
         
-        # Add receiver to validated data
         data['receiver'] = receiver
         data['sender'] = sender
         
@@ -195,10 +183,8 @@ class FriendshipCreateSerializer(ModelSerializer):
         Returns:
             Friendship: The newly created friendship instance.
         """
-        # Remove email from validated data
         validated_data.pop('receiver_email', None)
         
-        # Check if there's a rejected friendship and update it
         existing = Friendship.objects.filter(
             models.Q(sender=validated_data['sender'], receiver=validated_data['receiver']) |
             models.Q(sender=validated_data['receiver'], receiver=validated_data['sender']),
@@ -206,7 +192,6 @@ class FriendshipCreateSerializer(ModelSerializer):
         ).first()
         
         if existing:
-            # Update existing rejected friendship
             existing.sender = validated_data['sender']
             existing.receiver = validated_data['receiver']
             existing.status = FRIENDSHIP_STATUS_PENDING
@@ -264,7 +249,6 @@ class FriendshipResponseSerializer(ModelSerializer):
         """
         friendship = self.instance
         
-        # Check if friendship is pending
         if friendship.status != FRIENDSHIP_STATUS_PENDING:
             raise ValidationError(
                 f'Cannot respond to friendship with status: {friendship.status}'

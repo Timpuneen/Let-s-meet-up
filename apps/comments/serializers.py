@@ -1,10 +1,3 @@
-"""
-Serializers for comment models.
-
-This module contains serializers for the EventComment model,
-supporting CRUD operations and nested reply structures.
-"""
-
 from typing import Any, Dict, List
 
 from rest_framework import serializers
@@ -134,11 +127,9 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         event = data.get('event')
         
         if parent:
-            # Check if parent exists
             if not EventComment.objects.filter(id=parent.id).exists():
                 raise ValidationError({'parent': 'Parent comment does not exist'})
             
-            # Check if parent belongs to the same event
             if parent.event != event:
                 raise ValidationError({
                     'parent': 'Parent comment must belong to the same event'
@@ -158,7 +149,6 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         Returns:
             EventComment: The created EventComment instance.
         """
-        # User is set in the view from request.user
         return EventComment.objects.create(**validated_data)
 
 

@@ -1,10 +1,3 @@
-"""
-Event models for managing meetup events.
-
-This module contains the Event model with soft delete functionality,
-geographical references, and various event management features.
-"""
-
 from django.conf import settings
 from django.db import models
 
@@ -13,7 +6,6 @@ from apps.abstracts.models import AbstractSoftDeletableModel, AbstractTimestampe
 from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
 
 
-# Constants for event status choices
 EVENT_STATUS_PUBLISHED = 'published'
 EVENT_STATUS_CANCELLED = 'cancelled'
 EVENT_STATUS_COMPLETED = 'completed'
@@ -25,7 +17,6 @@ EVENT_STATUS_CHOICES = [
 ]
 
 
-# Constants for invitation permission choices
 INVITATION_PERM_ORGANIZER = 'organizer'
 INVITATION_PERM_ADMINS = 'admins'
 INVITATION_PERM_PARTICIPANTS = 'participants'
@@ -103,7 +94,6 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         help_text='Maximum number of participants (leave empty for unlimited)',
     )
     
-    # Relationships
     organizer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -215,6 +205,6 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
             if self.invitation_perm == INVITATION_PERM_ADMINS:
                 return participant.is_admin
             
-            return True  # INVITATION_PERM_PARTICIPANTS
+            return True  
         except EventParticipant.DoesNotExist:
             return False

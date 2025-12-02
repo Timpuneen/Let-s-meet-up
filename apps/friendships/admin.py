@@ -1,8 +1,3 @@
-# apps/friendships/admin.py
-"""
-Admin configuration for Friendship model.
-"""
-
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _

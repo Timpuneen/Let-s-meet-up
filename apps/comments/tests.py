@@ -1,10 +1,3 @@
-"""
-Tests for Comment API endpoints.
-
-This module contains comprehensive tests for CommentViewSet
-including CRUD operations, permissions, filtering, and nested replies.
-"""
-
 import pytest
 from django.urls import reverse
 from rest_framework import status
@@ -15,8 +8,6 @@ from apps.events.models import Event
 from apps.geography.models import Country, City
 from .models import EventComment
 
-
-# ============== FIXTURES ==============
 
 @pytest.fixture
 def api_client():
@@ -119,8 +110,6 @@ def comments(db, event, user, another_user):
     ]
 
 
-# ============== LIST TESTS ==============
-
 @pytest.mark.django_db
 class TestCommentListView:
     """Tests for listing comments (GET /api/comments/)."""
@@ -146,7 +135,6 @@ class TestCommentListView:
         """Test filtering comments by event."""
         from datetime import datetime, timedelta
         
-        # Create another event
         another_event = Event.objects.create(
             title='Another Event',
             description='Another event description',
@@ -157,7 +145,6 @@ class TestCommentListView:
             city=city
         )
         
-        # Create comments for both events
         EventComment.objects.create(event=event, user=user, content='Comment on event 1')
         EventComment.objects.create(event=event, user=user, content='Another comment on event 1')
         EventComment.objects.create(event=another_event, user=user, content='Comment on event 2')
@@ -193,7 +180,6 @@ class TestCommentListView:
 
     def test_list_comments_pagination(self, api_client, user, event):
         """Test that comments are paginated."""
-        # Create more comments than page size
         for i in range(25):
             EventComment.objects.create(
                 event=event,
@@ -207,10 +193,8 @@ class TestCommentListView:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 25
-        assert len(response.data['results']) == 20  # Default page size
+        assert len(response.data['results']) == 20 
 
-
-# ============== RETRIEVE TESTS ==============
 
 @pytest.mark.django_db
 class TestCommentRetrieveView:
@@ -244,8 +228,6 @@ class TestCommentRetrieveView:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-
-# ============== CREATE TESTS ==============
 
 @pytest.mark.django_db
 class TestCommentCreateView:
@@ -322,7 +304,6 @@ class TestCommentCreateView:
         """Test creating reply with parent from different event."""
         from datetime import datetime, timedelta
         
-        # Create another event and comment
         another_event = Event.objects.create(
             title='Another Event',
             description='Description',
@@ -349,8 +330,6 @@ class TestCommentCreateView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'parent' in response.data
 
-
-# ============== UPDATE TESTS ==============
 
 @pytest.mark.django_db
 class TestCommentUpdateView:
@@ -419,8 +398,6 @@ class TestCommentUpdateView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# ============== DELETE TESTS ==============
-
 @pytest.mark.django_db
 class TestCommentDeleteView:
     """Tests for deleting comments (DELETE /api/comments/{id}/)."""
@@ -432,7 +409,6 @@ class TestCommentDeleteView:
         response = api_client.delete(url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        # Soft delete - object still exists but is_deleted is True
         comment.refresh_from_db()
         assert comment.is_deleted
 
@@ -474,15 +450,12 @@ class TestCommentDeleteView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# ============== NESTED REPLIES TESTS ==============
-
 @pytest.mark.django_db
 class TestCommentRepliesView:
     """Tests for nested replies endpoint (GET /api/comments/{id}/replies/)."""
 
     def test_get_replies_success(self, api_client, user, comment, another_user):
         """Test successful retrieval of nested replies."""
-        # Create replies
         reply1 = EventComment.objects.create(
             event=comment.event,
             user=user,
@@ -495,7 +468,6 @@ class TestCommentRepliesView:
             parent=comment,
             content='Second reply'
         )
-        # Create nested reply
         EventComment.objects.create(
             event=comment.event,
             user=user,
@@ -508,9 +480,8 @@ class TestCommentRepliesView:
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2  # Two direct replies
+        assert len(response.data) == 2
         
-        # Check that nested replies are included
         first_reply = next(r for r in response.data if r['content'] == 'First reply')
         assert len(first_reply['replies']) == 1
         assert first_reply['replies'][0]['content'] == 'Nested reply'
@@ -540,8 +511,6 @@ class TestCommentRepliesView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# ============== PERMISSION TESTS ==============
-
 @pytest.mark.django_db
 class TestCommentPermissions:
     """Comprehensive tests for comment permissions."""
@@ -553,15 +522,12 @@ class TestCommentPermissions:
         list_url = reverse('comments:comment-list')
         detail_url = reverse('comments:comment-detail', kwargs={'pk': comment.pk})
 
-        # Can list
         response = api_client.get(list_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can retrieve
         response = api_client.get(detail_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can create
         response = api_client.post(
             list_url,
             {'event': event.id, 'content': 'New comment'},
@@ -574,7 +540,6 @@ class TestCommentPermissions:
         api_client.force_authenticate(user=user)
         detail_url = reverse('comments:comment-detail', kwargs={'pk': comment.pk})
 
-        # Can update
         response = api_client.patch(
             detail_url,
             {'content': 'Updated content'},
@@ -582,7 +547,6 @@ class TestCommentPermissions:
         )
         assert response.status_code == status.HTTP_200_OK
 
-        # Can delete
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -591,7 +555,6 @@ class TestCommentPermissions:
         api_client.force_authenticate(user=another_user)
         detail_url = reverse('comments:comment-detail', kwargs={'pk': comment.pk})
 
-        # Cannot update
         response = api_client.patch(
             detail_url,
             {'content': 'Should not update'},
@@ -599,7 +562,6 @@ class TestCommentPermissions:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        # Cannot delete
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -610,15 +572,12 @@ class TestCommentPermissions:
         list_url = reverse('comments:comment-list')
         detail_url = reverse('comments:comment-detail', kwargs={'pk': comment.pk})
 
-        # Can list
         response = api_client.get(list_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can retrieve
         response = api_client.get(detail_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can create
         response = api_client.post(
             list_url,
             {'event': event.id, 'content': 'Admin comment'},
@@ -626,7 +585,6 @@ class TestCommentPermissions:
         )
         assert response.status_code == status.HTTP_201_CREATED
 
-        # Can update others' comments
         response = api_client.patch(
             detail_url,
             {'content': 'Admin updated'},
@@ -634,7 +592,6 @@ class TestCommentPermissions:
         )
         assert response.status_code == status.HTTP_200_OK
 
-        # Can delete others' comments
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 

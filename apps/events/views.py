@@ -1,11 +1,4 @@
-"""
-ViewSets for Event management.
-
-This module contains viewsets for CRUD operations on events,
-with custom permissions, query optimization, and participant management.
-"""
-
-from typing import List, Optional
+from typing import List
 
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
@@ -110,9 +103,8 @@ class EventViewSet(ViewSet):
             status=EVENT_STATUS_PUBLISHED,
             date__gte=timezone.now()
         )
-        serializer = EventListSerializer(queryset, many=True, context={'request': request})
+        serializer = EventListSerializer(queryset, many=True)
         
-        # Return paginated response structure for compatibility with tests
         return Response({
             'count': queryset.count(),
             'next': None,
@@ -129,7 +121,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def retrieve(self, request: Request, pk: Optional[int] = None) -> Response:
+    def retrieve(self, request: Request, pk: int) -> Response:
         """
         Retrieve event details.
         
@@ -140,7 +132,7 @@ class EventViewSet(ViewSet):
             Response: Event details (200) or not found (404).
         """
         event = get_object_or_404(self._get_base_queryset(), pk=pk)
-        serializer = EventSerializer(event, context={'request': request})
+        serializer = EventSerializer(event)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     @extend_schema(
@@ -161,12 +153,11 @@ class EventViewSet(ViewSet):
         Returns:
             Response: Created event data (201) or validation errors (400).
         """
-        serializer = EventCreateSerializer(data=request.data, context={'request': request})
+        serializer = EventCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         event = serializer.save(organizer=request.user)
         
-        # Return full event data
-        response_serializer = EventSerializer(event, context={'request': request})
+        response_serializer = EventSerializer(event)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
     @extend_schema(
@@ -182,7 +173,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def update(self, request: Request, pk: Optional[int] = None) -> Response:
+    def update(self, request: Request, pk: int) -> Response:
         """
         Update an event.
         
@@ -194,8 +185,7 @@ class EventViewSet(ViewSet):
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         
-        # Check if user is the organizer
-        if event.organizer != request.user:
+        if self.check_object_permissions(request, event):
             return Response(
                 {'error': 'Only the organizer can update this event'},
                 status=status.HTTP_403_FORBIDDEN
@@ -206,13 +196,11 @@ class EventViewSet(ViewSet):
             event, 
             data=request.data, 
             partial=partial,
-            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         event = serializer.save()
         
-        # Return full event data
-        response_serializer = EventSerializer(event, context={'request': request})
+        response_serializer = EventSerializer(event)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
     
     @extend_schema(
@@ -228,7 +216,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def partial_update(self, request: Request, pk: Optional[int] = None) -> Response:
+    def partial_update(self, request: Request, pk: int) -> Response:
         """
         Partially update an event.
         
@@ -251,7 +239,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def destroy(self, request: Request, pk: Optional[int] = None) -> Response:
+    def destroy(self, request: Request, pk: int) -> Response:
         """
         Soft delete an event.
         
@@ -263,14 +251,13 @@ class EventViewSet(ViewSet):
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         
-        # Check if user is the organizer
-        if event.organizer != request.user:
+        if self.check_object_permissions(request, event):
             return Response(
                 {'error': 'Only the organizer can delete this event'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        event.delete()  # Soft delete
+        event.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     @extend_schema(
@@ -286,35 +273,31 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def register(self, request: Request, pk: Optional[int] = None) -> Response:
+    def register(self, request: Request, pk: int) -> Response:
         """
         Register current user for the event.
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         user = request.user
         
-        # Check: cannot register for your own event
         if event.organizer == user:
             return Response(
                 {'error': 'You cannot register for your own event'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check: already registered
         if EventParticipant.objects.filter(event=event, user=user).exists():
             return Response(
                 {'error': 'You are already registered for this event'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check: event is full
         if event.is_full():
             return Response(
                 {'error': 'This event has reached maximum capacity'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Create participation with accepted status
         EventParticipant.objects.create(
             event=event,
             user=user,
@@ -338,14 +321,13 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def unregister(self, request: Request, pk: Optional[int] = None) -> Response:
+    def unregister(self, request: Request, pk: int) -> Response:
         """
         Cancel registration for the event.
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         user = request.user
         
-        # Find participation
         try:
             participation = EventParticipant.objects.get(event=event, user=user)
         except EventParticipant.DoesNotExist:
@@ -354,7 +336,6 @@ class EventViewSet(ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Delete participation
         participation.delete()
         
         return Response(
@@ -377,9 +358,8 @@ class EventViewSet(ViewSet):
         List events organized by the current user.
         """
         events = self._get_base_queryset().filter(organizer=request.user)
-        serializer = EventListSerializer(events, many=True, context={'request': request})
+        serializer = EventListSerializer(events, many=True)
         
-        # Return paginated response structure for compatibility with tests
         return Response({
             'count': events.count(),
             'next': None,
@@ -401,16 +381,14 @@ class EventViewSet(ViewSet):
         """
         List events the current user is registered for.
         """
-        # Get events where user has accepted participation
         event_ids = EventParticipant.objects.filter(
             user=request.user,
             status=PARTICIPANT_STATUS_ACCEPTED
         ).values_list('event_id', flat=True)
         
         events = self._get_base_queryset().filter(id__in=event_ids)
-        serializer = EventListSerializer(events, many=True, context={'request': request})
+        serializer = EventListSerializer(events, many=True)
         
-        # Return paginated response structure for compatibility with tests
         return Response({
             'count': events.count(),
             'next': None,
@@ -456,12 +434,10 @@ class EventViewSet(ViewSet):
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         
-        # Get all comments for this event, ordered by creation date
         comments = EventComment.objects.filter(event=event).select_related(
             'user', 'parent'
         ).order_by('created_at')
         
-        # Serialize comments
         serializer = CommentListSerializer(comments, many=True)
         
         return Response({
@@ -510,12 +486,10 @@ class EventViewSet(ViewSet):
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         
-        # Get all photos for this event, ordered by cover status and creation date
         photos = EventPhoto.objects.filter(event=event).select_related(
             'uploaded_by'
         ).order_by('-is_cover', '-created_at')
         
-        # Serialize photos
         serializer = PhotoListSerializer(photos, many=True)
         
         return Response({

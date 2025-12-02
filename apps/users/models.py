@@ -1,10 +1,3 @@
-"""
-User models for authentication and user management.
-
-This module contains the custom User model with soft delete functionality
-and invitation privacy settings.
-"""
-
 from typing import Any
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -201,10 +194,9 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
             return True
         
         if self.invitation_privacy == INVITATION_PRIVACY_FRIENDS:
-            # Check if users are friends
             return Friendship.objects.filter(
                 models.Q(sender=self, receiver=inviter) | models.Q(sender=inviter, receiver=self),
                 status=FRIENDSHIP_STATUS_ACCEPTED
             ).exists()
         
-        return False  # INVITATION_PRIVACY_NONE
+        return False  

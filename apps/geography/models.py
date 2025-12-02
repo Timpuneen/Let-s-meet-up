@@ -1,10 +1,3 @@
-"""
-Geography models for countries and cities.
-
-This module contains models for storing geographical data
-used for event locations.
-"""
-
 from django.db import models
 
 from apps.abstracts.models import AbstractTimestampedModel

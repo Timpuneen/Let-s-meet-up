@@ -108,7 +108,6 @@ class CategoryViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
         category = serializer.save()
         
-        # Return full category data
         response_serializer = CategorySerializer(category)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -145,7 +144,6 @@ class CategoryViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
         category = serializer.save()
         
-        # Return full category data
         response_serializer = CategorySerializer(category)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 

@@ -7,9 +7,6 @@ app_name = 'events'
 router = DefaultRouter()
 router.register(r'', EventViewSet, basename='event')
 
-
-
 urlpatterns = [
-    # Event CRUD endpoints
     path('', include(router.urls)),
 ]

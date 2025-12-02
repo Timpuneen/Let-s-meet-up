@@ -1,10 +1,3 @@
-"""
-Tests for Category API endpoints.
-
-This module contains comprehensive tests for CategoryViewSet
-including CRUD operations, permissions, and edge cases.
-"""
-
 import pytest
 from django.urls import reverse
 from rest_framework import status
@@ -13,8 +6,6 @@ from rest_framework.test import APIClient
 from apps.users.models import User
 from .models import Category
 
-
-# ============== FIXTURES ==============
 
 @pytest.fixture
 def api_client():
@@ -70,8 +61,6 @@ def categories(db):
     ]
 
 
-# ============== LIST TESTS ==============
-
 @pytest.mark.django_db
 class TestCategoryListView:
     """Tests for listing categories (GET /api/categories/)."""
@@ -104,8 +93,6 @@ class TestCategoryListView:
         assert len(response.data) == 3
 
 
-# ============== RETRIEVE TESTS ==============
-
 @pytest.mark.django_db
 class TestCategoryRetrieveView:
     """Tests for retrieving category details (GET /api/categories/{id}/)."""
@@ -136,8 +123,6 @@ class TestCategoryRetrieveView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data['id'] == category.id
 
-
-# ============== CREATE TESTS ==============
 
 @pytest.mark.django_db
 class TestCategoryCreateView:
@@ -211,15 +196,13 @@ class TestCategoryCreateView:
         url = reverse('categories:category-list')
         data = {
             'name': 'Another Tech',
-            'slug': 'technology'  # Duplicate
+            'slug': 'technology'  
         }
         response = api_client.post(url, data, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'slug' in response.data
 
-
-# ============== UPDATE TESTS ==============
 
 @pytest.mark.django_db
 class TestCategoryUpdateView:
@@ -254,7 +237,7 @@ class TestCategoryUpdateView:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['name'] == 'Partially Updated'
-        assert response.data['slug'] == 'technology'  # Unchanged
+        assert response.data['slug'] == 'technology'  
         
         category.refresh_from_db()
         assert category.name == 'Partially Updated'
@@ -297,14 +280,12 @@ class TestCategoryUpdateView:
         api_client.force_authenticate(user=admin_user)
         url = reverse('categories:category-detail', kwargs={'pk': categories[0].pk})
         data = {
-            'slug': 'sports'  # Already exists for categories[1]
+            'slug': 'sports' 
         }
         response = api_client.patch(url, data, format='json')
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-
-# ============== DELETE TESTS ==============
 
 @pytest.mark.django_db
 class TestCategoryDeleteView:
@@ -345,8 +326,6 @@ class TestCategoryDeleteView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# ============== PERMISSION TESTS ==============
-
 @pytest.mark.django_db
 class TestCategoryPermissions:
     """Comprehensive tests for category permissions."""
@@ -356,23 +335,18 @@ class TestCategoryPermissions:
         list_url = reverse('categories:category-list')
         detail_url = reverse('categories:category-detail', kwargs={'pk': category.pk})
 
-        # Can list
         response = api_client.get(list_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can retrieve
         response = api_client.get(detail_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Cannot create
         response = api_client.post(list_url, {'name': 'Test', 'slug': 'test'}, format='json')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-        # Cannot update
         response = api_client.patch(detail_url, {'name': 'Test'}, format='json')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-        # Cannot delete
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -383,23 +357,18 @@ class TestCategoryPermissions:
         list_url = reverse('categories:category-list')
         detail_url = reverse('categories:category-detail', kwargs={'pk': category.pk})
 
-        # Can list
         response = api_client.get(list_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can retrieve
         response = api_client.get(detail_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Cannot create
         response = api_client.post(list_url, {'name': 'Test', 'slug': 'test'}, format='json')
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        # Cannot update
         response = api_client.patch(detail_url, {'name': 'Test'}, format='json')
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        # Cannot delete
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -410,15 +379,12 @@ class TestCategoryPermissions:
         list_url = reverse('categories:category-list')
         detail_url = reverse('categories:category-detail', kwargs={'pk': category.pk})
 
-        # Can list
         response = api_client.get(list_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can retrieve
         response = api_client.get(detail_url)
         assert response.status_code == status.HTTP_200_OK
 
-        # Can create
         response = api_client.post(
             list_url,
             {'name': 'Admin Category', 'slug': 'admin-category'},
@@ -426,7 +392,6 @@ class TestCategoryPermissions:
         )
         assert response.status_code == status.HTTP_201_CREATED
 
-        # Can update
         response = api_client.patch(
             detail_url,
             {'name': 'Updated by Admin'},
@@ -434,6 +399,5 @@ class TestCategoryPermissions:
         )
         assert response.status_code == status.HTTP_200_OK
 
-        # Can delete
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_204_NO_CONTENT

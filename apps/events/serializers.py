@@ -1,10 +1,3 @@
-"""
-Serializers for Event management.
-
-This module contains serializers for creating, updating, and displaying events
-with proper validation, optimization, and nested relationships.
-"""
-
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
@@ -308,7 +301,6 @@ class EventUpdateSerializer(ModelSerializer):
             if value < 1:
                 raise ValidationError('Maximum participants must be at least 1')
             
-            # Check current participants count
             instance = self.instance
             if instance:
                 current_count = instance.get_participants_count()
@@ -335,7 +327,6 @@ class EventUpdateSerializer(ModelSerializer):
         city = data.get('city')
         country = data.get('country')
         
-        # If only city is provided, get country from instance
         if city and not country and self.instance:
             country = self.instance.country
         

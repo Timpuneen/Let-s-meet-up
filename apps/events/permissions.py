@@ -11,9 +11,7 @@ class IsOrganizerOrReadOnly(IsAuthenticatedOrReadOnly):
     """
     
     def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
-        # Read permissions are allowed for authenticated users
         if request.method in ['GET', 'HEAD', 'OPTIONS']:
             return True
         
-        # Write permissions are only allowed to the organizer
         return obj.organizer == request.user

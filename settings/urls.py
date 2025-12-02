@@ -1,10 +1,3 @@
-"""
-URL configuration for Let's Meet Up project.
-
-This module defines the main URL routing for the application,
-including API endpoints, admin interface, and documentation.
-"""
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -24,7 +17,7 @@ urlpatterns = [
     path('api/comments/', include('apps.comments.urls')),
     path('api/photos/', include('apps.media.urls')),
     path('api/invitations/', include('apps.invitations.urls')),
-    path('api/', include('apps.friendships.urls')),
+    path('api/friendships/', include('apps.friendships.urls')),
 
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

@@ -1,10 +1,3 @@
-"""
-Serializers for event photo models.
-
-This module contains serializers for the EventPhoto model,
-supporting CRUD operations and photo management.
-"""
-
 from typing import Any, Dict
 
 from rest_framework import serializers
@@ -90,7 +83,6 @@ class PhotoCreateSerializer(serializers.ModelSerializer):
         if not value:
             raise ValidationError('URL is required')
         
-        # Basic URL validation
         if not (value.startswith('http://') or value.startswith('https://')):
             raise ValidationError('URL must start with http:// or https://')
         
@@ -119,11 +111,9 @@ class PhotoCreateSerializer(serializers.ModelSerializer):
         
         user = request.user
         
-        # Check if user is the organizer
         if event.organizer == user:
             return data
         
-        # Check if user is a participant
         from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
         
         is_participant = EventParticipant.objects.filter(
@@ -151,7 +141,6 @@ class PhotoCreateSerializer(serializers.ModelSerializer):
         Returns:
             EventPhoto: The created EventPhoto instance.
         """
-        # Uploader is set in the view from request.user
         return EventPhoto.objects.create(**validated_data)
 
 

@@ -1,26 +1,12 @@
-"""
-Base settings for Let's Meet Up project.
-
-This module contains all environment-agnostic settings that are shared
-between local and production environments.
-"""
-
 from datetime import timedelta
 from settings.conf import BASE_DIR, SECRET_KEY
 
-# SECRET_KEY imported from conf.py
-# BASE_DIR imported from conf.py
-
-# Root URL configuration
 ROOT_URLCONF = 'settings.urls'
 
-# WSGI/ASGI applications
 WSGI_APPLICATION = 'settings.wsgi.application'
 ASGI_APPLICATION = 'settings.asgi.application'
 
-# Application definition
 INSTALLED_APPS = [
-    # Unfold must come before django.contrib.admin
     'unfold',
     'unfold.contrib.filters',
     'unfold.contrib.forms',
@@ -49,7 +35,7 @@ INSTALLED_APPS = [
     'apps.friendships',
     'apps.categories',
     'apps.participants',
-    'apps.invitations',  # NEW: Invitations app
+    'apps.invitations',
     'apps.media',
     'apps.comments',
 ]
@@ -81,7 +67,6 @@ TEMPLATES = [
     },
 ]
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -97,27 +82,21 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Almaty'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files (User uploads)
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom user model
 AUTH_USER_MODEL = 'users.User'
 
-# REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -130,7 +109,6 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -153,7 +131,6 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# Django Unfold settings (Admin UI)
 UNFOLD = {
     "SITE_TITLE": "Let's Meet Up",
     "SITE_HEADER": "Let's Meet Up Administration",
@@ -226,7 +203,7 @@ UNFOLD = {
                         "link": lambda request: "/admin/participants/eventparticipant/",
                     },
                     {
-                        "title": "Invitations",  # NEW
+                        "title": "Invitations",
                         "icon": "mail",
                         "link": lambda request: "/admin/invitations/eventinvitation/",
                         "badge": lambda request: EventInvitation.objects.filter(status='pending').count() if 'EventInvitation' in globals() else 0,
@@ -313,7 +290,7 @@ UNFOLD = {
                     "link": lambda request, instance=None: f"/admin/participants/eventparticipant/?event__id__exact={instance.pk}" if instance else None,
                 },
                 {
-                    "title": "Invitations",  # NEW
+                    "title": "Invitations", 
                     "link": lambda request, instance=None: f"/admin/invitations/eventinvitation/?event__id__exact={instance.pk}" if instance else None,
                 },
                 {
@@ -352,14 +329,12 @@ UNFOLD = {
     ],
 }
 
-# DRF Spectacular settings (Swagger/OpenAPI)
 SPECTACULAR_SETTINGS = {
     'TITLE': "Let's Meet Up API",
     'DESCRIPTION': 'API for managing meetup events and user registrations',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 
-    # Authentication
     'COMPONENT_SPLIT_REQUEST': True,
     'SECURITY': [{'Bearer': []}],
     'SECURITY_DEFINITIONS': {
@@ -371,7 +346,6 @@ SPECTACULAR_SETTINGS = {
         }
     },
 
-    # Schema generation
     'SCHEMA_PATH_PREFIX': r'/api/',
     'SCHEMA_PATH_PREFIX_TRIM': False,
     'SWAGGER_UI_SETTINGS': {
@@ -381,7 +355,6 @@ SPECTACULAR_SETTINGS = {
     },
     'SWAGGER_UI_FAVICON_HREF': 'https://img.icons8.com/fluency/48/calendar.png',
 
-    # Tags
     'TAGS': [
         {'name': 'Authentication', 'description': 'User authentication endpoints'},
         {'name': 'Events', 'description': 'Event management and registration'},

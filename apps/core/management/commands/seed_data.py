@@ -1,11 +1,3 @@
-"""
-Management command to seed the database with test data.
-
-Usage:
-    python manage.py seed_data
-    python manage.py seed_data --clear  # Clear existing data first
-"""
-
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
@@ -38,46 +30,46 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         if options['clear']:
-            self.stdout.write(self.style.WARNING('🗑️  Clearing existing data...'))
+            self.stdout.write(self.style.WARNING('Clearing existing data...'))
             self.clear_data()
         
-        self.stdout.write(self.style.SUCCESS('🌱 Starting database seeding...'))
+        self.stdout.write(self.style.SUCCESS('Starting database seeding...'))
         
         try:
             with transaction.atomic():
-                self.stdout.write('🌍 Seeding countries and cities...')
+                self.stdout.write('Seeding countries and cities...')
                 countries = self.create_countries()
                 cities = self.create_cities(countries)
                 
-                self.stdout.write('👥 Seeding users...')
+                self.stdout.write('Seeding users...')
                 users = self.create_users(60)
                 
-                self.stdout.write('🏷️  Seeding categories...')
+                self.stdout.write('Seeding categories...')
                 categories = self.create_categories()
                 
-                self.stdout.write('🎉 Seeding events...')
+                self.stdout.write('Seeding events...')
                 events = self.create_events(users, cities, categories, 40)
                 
-                self.stdout.write('🤝 Seeding friendships...')
+                self.stdout.write('Seeding friendships...')
                 self.create_friendships(users, 150)
                 
-                self.stdout.write('✅ Seeding participants...')
+                self.stdout.write('Seeding participants...')
                 self.create_participants(events, users)
                 
-                self.stdout.write('📧 Seeding invitations...')
+                self.stdout.write('Seeding invitations...')
                 self.create_invitations(events, users)
                 
-                self.stdout.write('💬 Seeding comments...')
+                self.stdout.write('Seeding comments...')
                 self.create_comments(events, users, 200)
                 
-                self.stdout.write('📸 Seeding photos...')
+                self.stdout.write('Seeding photos...')
                 self.create_photos(events, users, 100)
                 
-                self.stdout.write(self.style.SUCCESS('✨ Database seeded successfully!'))
+                self.stdout.write(self.style.SUCCESS('Database seeded successfully!'))
                 self.print_statistics()
                 
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'❌ Error during seeding: {str(e)}'))
+            self.stdout.write(self.style.ERROR(f'Error during seeding: {str(e)}'))
             raise
     
     def clear_data(self):
@@ -92,7 +84,7 @@ class Command(BaseCommand):
         City.objects.all().delete()
         Country.objects.all().delete()
         User.objects.filter(is_superuser=False).delete()
-        self.stdout.write(self.style.SUCCESS('✓ Data cleared'))
+        self.stdout.write(self.style.SUCCESS('Data cleared'))
     
     def create_countries(self):
         """Create realistic country data."""
@@ -127,7 +119,7 @@ class Command(BaseCommand):
             )
             countries.append(country)
             if created:
-                self.stdout.write(f'  ✓ Created country: {name}')
+                self.stdout.write(f'Created country: {name}')
         
         return countries
     
@@ -169,7 +161,7 @@ class Command(BaseCommand):
                     )
                     cities.append(city)
         
-        self.stdout.write(f'  ✓ Created {len(cities)} cities')
+        self.stdout.write(f'Created {len(cities)} cities')
         return cities
     
     def create_users(self, count):
@@ -177,7 +169,6 @@ class Command(BaseCommand):
         users = []
         privacy_choices = [INVITATION_PRIVACY_EVERYONE, INVITATION_PRIVACY_FRIENDS, INVITATION_PRIVACY_NONE]
         
-        # Create a superuser first
         superuser, created = User.objects.get_or_create(
             email='admin@letsmeetup.com',
             defaults={
@@ -190,16 +181,14 @@ class Command(BaseCommand):
         if created:
             superuser.set_password('admin123')
             superuser.save()
-            self.stdout.write(self.style.SUCCESS('  ✓ Created superuser: admin@letsmeetup.com / admin123'))
+            self.stdout.write(self.style.SUCCESS('Created superuser: admin@letsmeetup.com / admin123'))
         
         users.append(superuser)
         
-        # Create regular users
         for i in range(count):
             name = fake.name()
             email = fake.email()
             
-            # Check if email already exists
             if User.objects.filter(email=email).exists():
                 email = f"{fake.user_name()}_{i}@example.com"
             
@@ -208,11 +197,11 @@ class Command(BaseCommand):
                 name=name,
                 password='password123',
                 invitation_privacy=random.choice(privacy_choices),
-                is_active=random.choice([True, True, True, False])  # 75% active
+                is_active=random.choice([True, True, True, False])
             )
             users.append(user)
         
-        self.stdout.write(f'  ✓ Created {len(users)} users')
+        self.stdout.write(f'Created {len(users)} users')
         return users
     
     def create_categories(self):
@@ -248,7 +237,7 @@ class Command(BaseCommand):
             )
             categories.append(category)
         
-        self.stdout.write(f'  ✓ Created {len(categories)} categories')
+        self.stdout.write(f'Created {len(categories)} categories')
         return categories
     
     def create_events(self, users, cities, categories, count):
@@ -304,20 +293,16 @@ class Command(BaseCommand):
             organizer = random.choice(users)
             city = random.choice(cities)
             
-            # Generate date (50% future, 30% recent past, 20% far past)
             rand = random.random()
             if rand < 0.5:
-                # Future events
                 days_ahead = random.randint(1, 90)
                 event_date = timezone.now() + timedelta(days=days_ahead, hours=random.randint(9, 20))
                 status = random.choice([EVENT_STATUS_PUBLISHED])
             elif rand < 0.8:
-                # Recent past
                 days_ago = random.randint(1, 30)
                 event_date = timezone.now() - timedelta(days=days_ago, hours=random.randint(9, 20))
                 status = EVENT_STATUS_COMPLETED
             else:
-                # Far past
                 days_ago = random.randint(31, 365)
                 event_date = timezone.now() - timedelta(days=days_ago, hours=random.randint(9, 20))
                 status = EVENT_STATUS_COMPLETED
@@ -337,13 +322,12 @@ class Command(BaseCommand):
                 city=city,
             )
             
-            # Assign 1-3 categories
             event_categories = random.sample(categories, random.randint(1, 3))
             event.categories.set(event_categories)
             
             events.append(event)
         
-        self.stdout.write(f'  ✓ Created {len(events)} events')
+        self.stdout.write(f'Created {len(events)} events')
         return events
     
     def create_friendships(self, users, count):
@@ -360,7 +344,6 @@ class Command(BaseCommand):
             if sender == receiver:
                 continue
             
-            # Check if friendship already exists
             if Friendship.objects.filter(
                 sender=sender,
                 receiver=receiver
@@ -379,18 +362,16 @@ class Command(BaseCommand):
             )
             created_count += 1
         
-        self.stdout.write(f'  ✓ Created {created_count} friendships')
+        self.stdout.write(f'Created {created_count} friendships')
     
     def create_participants(self, events, users):
         """Create accepted event participants (only accepted status)."""
         created_count = 0
         
         for event in events:
-            # Skip organizer - they're automatically a participant
-            # Add random accepted participants
             num_participants = random.randint(3, 12)
             if event.max_participants:
-                num_participants = min(num_participants, event.max_participants - 1)  # -1 for organizer
+                num_participants = min(num_participants, event.max_participants - 1)
             
             potential_participants = [u for u in users if u != event.organizer]
             participants = random.sample(
@@ -400,31 +381,28 @@ class Command(BaseCommand):
             
             for user in participants:
                 if not EventParticipant.objects.filter(event=event, user=user).exists():
-                    is_admin = random.random() < 0.15  # 15% chance to be admin
+                    is_admin = random.random() < 0.15
                     
                     EventParticipant.objects.create(
                         event=event,
                         user=user,
                         is_admin=is_admin,
-                        # status is always 'accepted' by default in the model
                     )
                     created_count += 1
         
-        self.stdout.write(f'  ✓ Created {created_count} accepted participants')
+        self.stdout.write(f'Created {created_count} accepted participants')
     
     def create_invitations(self, events, users):
         """Create event invitations with different statuses."""
         created_count = 0
         
         for event in events:
-            # Get current participants and organizer
             existing_participant_ids = set(
                 EventParticipant.objects.filter(event=event)
                 .values_list('user_id', flat=True)
             )
             existing_participant_ids.add(event.organizer_id)
             
-            # Get users who can send invitations
             potential_inviters = [event.organizer]
             if event.invitation_perm == INVITATION_PERM_PARTICIPANTS:
                 event_participants = EventParticipant.objects.filter(
@@ -441,10 +419,8 @@ class Command(BaseCommand):
             if not potential_inviters:
                 continue
             
-            # Create 2-8 invitations per event
             num_invitations = random.randint(2, 8)
             
-            # Get users who are not yet participants or invited
             existing_invitation_user_ids = set(
                 EventInvitation.objects.filter(event=event)
                 .values_list('invited_user_id', flat=True)
@@ -467,7 +443,6 @@ class Command(BaseCommand):
             for invitee in invitees:
                 inviter = random.choice(potential_inviters)
                 
-                # Status distribution: 60% pending, 25% accepted, 15% rejected
                 status_choice = random.random()
                 if status_choice < 0.60:
                     status = INVITATION_STATUS_PENDING
@@ -485,21 +460,18 @@ class Command(BaseCommand):
                     )
                     created_count += 1
                 except Exception as e:
-                    # Skip if validation fails
                     continue
         
-        self.stdout.write(f'  ✓ Created {created_count} invitations')
+        self.stdout.write(f'Created {created_count} invitations')
     
     def create_comments(self, events, users, count):
         """Create event comments with threaded replies."""
         comments = []
         created_count = 0
         
-        # Create top-level comments
         for _ in range(int(count * 0.7)):
             event = random.choice(events)
             
-            # Only accepted participants and organizer can comment
             participants = EventParticipant.objects.filter(
                 event=event
             ).select_related('user')
@@ -519,7 +491,6 @@ class Command(BaseCommand):
             comments.append(comment)
             created_count += 1
         
-        # Create replies
         for _ in range(int(count * 0.3)):
             if not comments:
                 break
@@ -547,26 +518,21 @@ class Command(BaseCommand):
             comments.append(reply)
             created_count += 1
         
-        self.stdout.write(f'  ✓ Created {created_count} comments')
+        self.stdout.write(f'Created {created_count} comments')
     
     def create_photos(self, events, users, count):
         """Create event photos with working URLs from multiple sources."""
         created_count = 0
         
-        # Multiple reliable image sources
         photo_sources = [
-            # Picsum Photos - Lorem Ipsum for photos, very reliable
             lambda: f"https://picsum.photos/seed/{random.randint(1, 10000)}/800/600",
             
-            # Unsplash Source with categories
             lambda: f"https://source.unsplash.com/800x600/?{random.choice(['party', 'conference', 'meeting', 'sports', 'concert', 'food', 'nature', 'people', 'fitness', 'travel'])}",
             
-            # Placeholder.com - always works
             lambda: f"https://via.placeholder.com/800x600/{random.choice(['FF6B6B', '4ECDC4', '45B7D1', 'FFA07A', '98D8C8', 'F7DC6F', 'BB8FCE'])}/FFFFFF?text=Event+Photo",
         ]
         
         for event in events[:min(len(events), count // 2)]:
-            # Each event gets 1-5 photos
             num_photos = random.randint(1, 5)
             
             participants = EventParticipant.objects.filter(
@@ -581,7 +547,6 @@ class Command(BaseCommand):
             for i in range(num_photos):
                 uploader = random.choice(potential_uploaders)
                 
-                # Pick a random source and generate URL
                 source_generator = random.choice(photo_sources)
                 photo_url = source_generator()
                 
@@ -590,16 +555,16 @@ class Command(BaseCommand):
                     uploaded_by=uploader,
                     url=photo_url,
                     caption=fake.sentence() if random.random() > 0.5 else None,
-                    is_cover=(i == 0)  # First photo is cover
+                    is_cover=(i == 0)
                 )
                 created_count += 1
         
-        self.stdout.write(f'  ✓ Created {created_count} photos from multiple image sources')
+        self.stdout.write(f'Created {created_count} photos from multiple image sources')
     
     def print_statistics(self):
         """Print database statistics."""
         self.stdout.write('\n' + '='*50)
-        self.stdout.write(self.style.SUCCESS('📊 Database Statistics:'))
+        self.stdout.write(self.style.SUCCESS('Database Statistics:'))
         self.stdout.write('='*50)
         self.stdout.write(f'  Countries: {Country.objects.count()}')
         self.stdout.write(f'  Cities: {City.objects.count()}')

@@ -1,9 +1,3 @@
-"""
-URL configuration for comments app.
-
-This module defines URL patterns for comment-related endpoints.
-"""
-
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import CommentViewSet
@@ -14,8 +8,7 @@ router = DefaultRouter()
 router.register(r'', CommentViewSet, basename='comment')
 
 urlpatterns = [
-    # Comment CRUD endpoints
-    # GET    /api/comments/              - List comments (with filtering)
+    # GET    /api/comments/              - List comments
     # POST   /api/comments/              - Create comment
     # GET    /api/comments/{id}/         - Get comment details
     # PATCH  /api/comments/{id}/         - Update comment

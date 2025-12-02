@@ -1,10 +1,3 @@
-"""
-Views for Event Invitation management.
-
-This module contains ViewSets for creating, viewing, and responding
-to event invitations with proper permissions and filtering.
-"""
-
 from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -57,20 +50,17 @@ class EventInvitationViewSet(viewsets.ModelViewSet):
             'event__organizer', 'event__city', 'event__country'
         ).prefetch_related('event__categories')
         
-        # Filter by type (received or sent)
         invitation_type = self.request.query_params.get('type', 'received')
         
         if invitation_type == 'sent':
             queryset = queryset.filter(invited_by=user)
-        else:  # received
+        else:  
             queryset = queryset.filter(invited_user=user)
         
-        # Filter by status
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         
-        # Filter by event
         event_id = self.request.query_params.get('event')
         if event_id:
             queryset = queryset.filter(event_id=event_id)
@@ -106,7 +96,6 @@ class EventInvitationViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         invitation = serializer.save()
         
-        # Return full invitation data
         response_serializer = EventInvitationSerializer(invitation)
         return Response(
             response_serializer.data,
@@ -150,14 +139,12 @@ class EventInvitationViewSet(viewsets.ModelViewSet):
         """
         invitation = self.get_object()
         
-        # Check permissions
         if request.user not in [invitation.invited_by, invitation.event.organizer]:
             return Response(
                 {'detail': 'Only the inviter or event organizer can cancel invitations'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Check status
         if invitation.status != INVITATION_STATUS_PENDING:
             return Response(
                 {'detail': f'Cannot cancel invitation with status: {invitation.status}'},
@@ -196,7 +183,6 @@ class EventInvitationViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         invitation = serializer.save()
         
-        # Return full invitation data
         response_serializer = EventInvitationSerializer(invitation)
         return Response(response_serializer.data)
     

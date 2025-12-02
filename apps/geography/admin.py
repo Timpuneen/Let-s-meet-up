@@ -1,7 +1,3 @@
-"""
-Admin configuration for Country and City models.
-"""
-
 from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
@@ -38,7 +34,6 @@ class CountryAdmin(ModelAdmin):
 
     @display(description=_('Country'), ordering='name', header=True)
     def name_with_flag(self, obj):
-        # Use mark_safe for header columns
         return [mark_safe(
             f'<span style="font-size:18px;margin-right:8px;">{self.get_flag_emoji(obj.code)}</span>'
             f'<strong>{obj.name}</strong>'
@@ -98,7 +93,6 @@ class CityAdmin(ModelAdmin):
 
     @display(description=_('City'), ordering='name', header=True)
     def city_name(self, obj):
-        # Use mark_safe for header columns
         return [mark_safe(f'<strong>{obj.name}</strong>')]
 
     @display(description=_('Country'), ordering='country__name')

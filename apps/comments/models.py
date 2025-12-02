@@ -1,10 +1,3 @@
-"""
-Comment models for event discussions.
-
-This module contains models for managing threaded comments on events,
-supporting nested replies and moderation.
-"""
-
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -111,7 +104,6 @@ class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
             if self.parent.event != self.event:
                 raise ValidationError('Parent comment must belong to the same event')
             
-            # Check reply depth (prevent excessive nesting)
             depth = 0
             current = self.parent
             max_depth = 10

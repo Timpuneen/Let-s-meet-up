@@ -1,10 +1,3 @@
-"""
-Unit tests for user authentication endpoints using pytest.
-
-Tests cover registration, login, token refresh, and user profile retrieval.
-Each endpoint is tested with one success case and three failure cases.
-"""
-
 import pytest
 from django.urls import reverse
 from rest_framework import status
@@ -12,9 +5,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 
 from apps.users.models import User
-
-
-# ==================== SIGNUP TESTS ====================
 
 @pytest.mark.django_db
 class TestSignupView:
@@ -37,12 +27,10 @@ class TestSignupView:
         assert response.data['user']['email'] == user_data['email']
         assert response.data['user']['name'] == user_data['name']
         
-        # Verify user was created in database
         assert User.objects.filter(email=user_data['email']).exists()
     
     def test_signup_duplicate_email(self, api_client, user_data, user):
         """Test registration with duplicate email (Bad case 1)."""
-        # Try to register with existing user's email
         user_data['email'] = user.email
         response = api_client.post(self.url, user_data, format='json')
         
@@ -66,8 +54,6 @@ class TestSignupView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'password' in response.data
 
-
-# ==================== LOGIN TESTS ====================
 
 @pytest.mark.django_db
 class TestLoginView:
@@ -110,7 +96,6 @@ class TestLoginView:
     
     def test_login_inactive_user(self, api_client, user, login_data):
         """Test login with deactivated account (Bad case 3)."""
-        # Deactivate user
         user.is_active = False
         user.save()
         
@@ -119,8 +104,6 @@ class TestLoginView:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'non_field_errors' in response.data
 
-
-# ==================== ME (PROFILE) TESTS ====================
 
 @pytest.mark.django_db
 class TestMeView:
@@ -155,9 +138,6 @@ class TestMeView:
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
     
-
-
-# ==================== TOKEN REFRESH TESTS ====================
 
 @pytest.mark.django_db
 class TestTokenRefreshView:

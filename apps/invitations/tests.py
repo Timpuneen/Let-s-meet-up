@@ -1,10 +1,3 @@
-"""
-Tests for Event Invitations.
-
-This module contains comprehensive tests for invitation functionality
-including permissions, validation, and workflow.
-"""
-
 import pytest
 from django.utils import timezone
 from datetime import timedelta
@@ -100,7 +93,6 @@ class TestEventInvitationCreation:
     
     def test_participant_can_invite_when_allowed(self, api_client, participant, event, invitee):
         """Test that participant can invite when event allows it."""
-        # Add participant to event
         EventParticipant.objects.create(event=event, user=participant)
         
         api_client.force_authenticate(user=participant)
@@ -222,7 +214,6 @@ class TestInvitationPrivacy:
         invitee.invitation_privacy = INVITATION_PRIVACY_FRIENDS
         invitee.save()
         
-        # Create friendship
         Friendship.objects.create(
             sender=organizer,
             receiver=invitee,
@@ -292,7 +283,6 @@ class TestInvitationResponse:
         invitation.refresh_from_db()
         assert invitation.status == 'accepted'
         
-        # Check participant was created
         assert EventParticipant.objects.filter(
             event=event,
             user=invitee
@@ -317,7 +307,6 @@ class TestInvitationResponse:
         invitation.refresh_from_db()
         assert invitation.status == 'rejected'
         
-        # Check participant was not created
         assert not EventParticipant.objects.filter(
             event=event,
             user=invitee
@@ -333,13 +322,11 @@ class TestInvitationResponse:
         
         api_client.force_authenticate(user=organizer)
         
-        # Попытка принять инвайт как организатор (не приглашенный пользователь)
         response = api_client.post(f'/api/invitations/{invitation.id}/respond/', {
             'action': 'accept'
         })
         
-        # Проверяем, что получили 404 (инвайт не найден в queryset организатора)
-        # ИЛИ 403 (если permissions правильно настроены)
+
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND]
     
     def test_cannot_respond_to_non_pending_invitation(
@@ -366,7 +353,6 @@ class TestInvitationResponse:
         event.max_participants = 1
         event.save()
         
-        # Fill the event
         other_user = User.objects.create_user(
             email='other@test.com',
             name='Other',

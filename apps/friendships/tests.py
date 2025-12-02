@@ -1,10 +1,3 @@
-"""
-Tests for Friendships.
-
-This module contains comprehensive tests for friendship functionality
-including permissions, validation, and workflow.
-"""
-
 import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -169,7 +162,6 @@ class TestFriendshipResponse:
         friendship = Friendship.objects.create(sender=user1, receiver=user2)
         friendship.refresh_from_db()
         
-        # Debug: check if friendship exists
         assert Friendship.objects.filter(pk=friendship.pk).exists()
         print(f"DEBUG: Friendship ID = {friendship.pk}, exists in DB")
         
@@ -289,7 +281,7 @@ class TestFriendshipDeletion:
     def test_sender_can_cancel_pending_request(self, api_client, user1, user2):
         """Test sender can cancel their pending request."""
         friendship = Friendship.objects.create(sender=user1, receiver=user2)
-        friendship.refresh_from_db()  # Ensure we have the correct ID
+        friendship.refresh_from_db() 
         
         api_client.force_authenticate(user=user1)
         
@@ -331,10 +323,8 @@ class TestFriendshipStats:
     
     def test_get_stats(self, api_client, user1, user2, user3):
         """Test getting friendship statistics."""
-        # User1 sends request to user2 (pending)
         Friendship.objects.create(sender=user1, receiver=user2)
         
-        # User3 sends request to user1 (accepted)
         Friendship.objects.create(
             sender=user3,
             receiver=user1,

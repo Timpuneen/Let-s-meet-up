@@ -9,6 +9,5 @@ router.register(r'', CategoryViewSet, basename='category')
 
 
 urlpatterns = [
-    # Category CRUD endpoints
     path('', include(router.urls)),
 ]

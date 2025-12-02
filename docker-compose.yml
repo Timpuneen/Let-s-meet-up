@@ -1,4 +1,4 @@
-# Using Docker Compose Specification (latest standard)
+# Using Docker Compose Specification
 # Compatible with Docker Compose v2.0+
 
 services:

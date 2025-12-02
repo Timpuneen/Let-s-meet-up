@@ -1,7 +1,3 @@
-"""
-Pytest configuration and fixtures for the entire project.
-"""
-
 import pytest
 from datetime import timedelta
 from django.utils import timezone
@@ -14,7 +10,7 @@ from apps.geography.models import Country, City
 from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
 
 
-# ==================== USER FIXTURES ====================
+#USER
 
 @pytest.fixture
 def api_client():
@@ -123,7 +119,7 @@ def login_data(user):
     }
 
 
-# ==================== GEOGRAPHY FIXTURES ====================
+#GEOGRAPHY
 
 @pytest.fixture
 def country(db):
@@ -156,7 +152,7 @@ def city(db, country):
     )
 
 
-# ==================== CATEGORY FIXTURES ====================
+#CATEGORY
 
 @pytest.fixture
 def category(db):
@@ -186,7 +182,7 @@ def another_category(db):
     )
 
 
-# ==================== EVENT FIXTURES ====================
+#EVENT
 
 @pytest.fixture
 def event(db, user, city, category):
@@ -263,7 +259,6 @@ def full_event(db, user, city):
         country=city.country,
         city=city
     )
-    # Create a participant to fill the event
     other_user = User.objects.create_user(
         email='participant@example.com',
         name='Participant',

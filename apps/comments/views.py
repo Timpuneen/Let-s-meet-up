@@ -1,12 +1,3 @@
-"""
-ViewSet for managing EventComment instances.
-
-This module provides RESTful API endpoints for comment operations
-including CRUD operations, filtering, pagination, and nested replies.
-"""
-
-from typing import Optional
-
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -125,20 +116,16 @@ class CommentViewSet(ViewSet):
         """
         queryset = self.get_queryset()
         
-        # Filter by event if provided
         event_id = request.query_params.get('event')
         if event_id:
             queryset = queryset.filter(event_id=event_id)
         
-        # Filter by user if provided
         user_id = request.query_params.get('user')
         if user_id:
             queryset = queryset.filter(user_id=user_id)
         
-        # Order by creation date
         queryset = queryset.order_by('created_at')
         
-        # Paginate
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request)
         
@@ -158,7 +145,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def retrieve(self, request: Request, pk: Optional[int] = None) -> Response:
+    def retrieve(self, request: Request, pk: int) -> Response:
         """
         Retrieve comment details.
         
@@ -195,10 +182,8 @@ class CommentViewSet(ViewSet):
         serializer = CommentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # Set the user from the request
         comment = serializer.save(user=request.user)
         
-        # Return full comment data
         response_serializer = CommentSerializer(comment)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
@@ -215,7 +200,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def update(self, request: Request, pk: Optional[int] = None) -> Response:
+    def update(self, request: Request, pk: int) -> Response:
         """
         Update a comment.
         
@@ -229,7 +214,6 @@ class CommentViewSet(ViewSet):
         """
         comment = get_object_or_404(self.get_queryset(), pk=pk)
         
-        # Check object-level permissions
         self.check_object_permissions(request, comment)
         
         partial = request.method == 'PATCH'
@@ -241,7 +225,6 @@ class CommentViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
         comment = serializer.save()
         
-        # Return full comment data
         response_serializer = CommentSerializer(comment)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
     
@@ -258,7 +241,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def partial_update(self, request: Request, pk: Optional[int] = None) -> Response:
+    def partial_update(self, request: Request, pk: int) -> Response:
         """
         Partially update a comment.
         
@@ -283,7 +266,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def destroy(self, request: Request, pk: Optional[int] = None) -> Response:
+    def destroy(self, request: Request, pk: int) -> Response:
         """
         Delete a comment (soft delete).
         
@@ -297,7 +280,6 @@ class CommentViewSet(ViewSet):
         """
         comment = get_object_or_404(self.get_queryset(), pk=pk)
         
-        # Check object-level permissions
         self.check_object_permissions(request, comment)
         
         comment.delete()
@@ -316,7 +298,7 @@ class CommentViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['get'], url_path='replies')
-    def replies(self, request: Request, pk: Optional[int] = None) -> Response:
+    def replies(self, request: Request, pk: int) -> Response:
         """
         Get all nested replies to a comment.
         
@@ -330,7 +312,6 @@ class CommentViewSet(ViewSet):
         """
         comment = get_object_or_404(self.get_queryset(), pk=pk)
         
-        # Get direct replies
         replies = comment.replies.all().order_by('created_at')
         serializer = NestedReplySerializer(replies, many=True)
         

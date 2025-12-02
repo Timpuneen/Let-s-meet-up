@@ -1,10 +1,3 @@
-"""
-Media models for event photos and attachments.
-
-This module contains models for managing photos uploaded to events,
-including cover images and captions.
-"""
-
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -105,7 +98,6 @@ class EventPhoto(AbstractTimestampedModel, AbstractSoftDeletableModel):
         Raises:
             ValidationError: If validation fails.
         """
-        # Check if trying to set as cover when another cover exists
         if self.is_cover:
             existing_cover = EventPhoto.objects.filter(
                 event=self.event,
@@ -130,7 +122,6 @@ class EventPhoto(AbstractTimestampedModel, AbstractSoftDeletableModel):
             **kwargs: Arbitrary keyword arguments.
         """
         if self.is_cover:
-            # Remove cover status from other photos
             EventPhoto.objects.filter(
                 event=self.event,
                 is_cover=True

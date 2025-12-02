@@ -71,7 +71,6 @@ class AuthViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Generate response with tokens
         response_data = {"user": user}
         token_serializer = AuthTokenSerializer(response_data)
 
@@ -107,7 +106,6 @@ class AuthViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
 
-        # Generate response with tokens
         response_data = {"user": user}
         token_serializer = AuthTokenSerializer(response_data)
 

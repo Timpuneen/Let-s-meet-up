@@ -1,10 +1,3 @@
-"""
-Category models for event classification.
-
-This module contains models for categorizing events
-and managing the many-to-many relationship between events and categories.
-"""
-
 from django.db import models
 from django.utils.text import slugify
 

@@ -1,10 +1,3 @@
-"""
-Tests for Photo API endpoints.
-
-This module contains comprehensive tests for PhotoViewSet
-including CRUD operations, permissions, filtering, and cover photo management.
-"""
-
 import pytest
 from django.urls import reverse
 from rest_framework import status
@@ -16,8 +9,6 @@ from apps.geography.models import Country, City
 from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
 from .models import EventPhoto
 
-
-# ============== FIXTURES ==============
 
 @pytest.fixture
 def api_client():
@@ -125,8 +116,6 @@ def photos(db, event, user, another_user):
     ]
 
 
-# ============== LIST TESTS ==============
-
 @pytest.mark.django_db
 class TestPhotoListView:
     """Tests for listing photos (GET /api/photos/)."""
@@ -140,7 +129,6 @@ class TestPhotoListView:
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 3
         assert len(response.data['results']) == 3
-        # Cover photo should be first
         assert response.data['results'][0]['is_cover'] is True
 
     def test_list_photos_unauthenticated(self, api_client, photos):
@@ -154,7 +142,6 @@ class TestPhotoListView:
         """Test filtering photos by event."""
         from datetime import datetime, timedelta
         
-        # Create another event
         another_event = Event.objects.create(
             title='Another Event',
             description='Another event description',
@@ -165,7 +152,6 @@ class TestPhotoListView:
             city=city
         )
         
-        # Create photos for both events
         EventPhoto.objects.create(event=event, uploaded_by=user, url='https://example.com/1.jpg')
         EventPhoto.objects.create(event=event, uploaded_by=user, url='https://example.com/2.jpg')
         EventPhoto.objects.create(event=another_event, uploaded_by=user, url='https://example.com/3.jpg')
@@ -201,7 +187,6 @@ class TestPhotoListView:
 
     def test_list_photos_pagination(self, api_client, user, event):
         """Test that photos are paginated."""
-        # Create more photos than page size
         for i in range(25):
             EventPhoto.objects.create(
                 event=event,
@@ -215,10 +200,8 @@ class TestPhotoListView:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 25
-        assert len(response.data['results']) == 20  # Default page size
+        assert len(response.data['results']) == 20
 
-
-# ============== RETRIEVE TESTS ==============
 
 @pytest.mark.django_db
 class TestPhotoRetrieveView:
@@ -252,8 +235,6 @@ class TestPhotoRetrieveView:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-# ============== CREATE TESTS ==============
-
 @pytest.mark.django_db
 class TestPhotoCreateView:
     """Tests for creating photos (POST /api/photos/)."""
@@ -277,7 +258,6 @@ class TestPhotoCreateView:
 
     def test_create_photo_success_as_participant(self, api_client, another_user, event):
         """Test successful photo creation by event participant."""
-        # Make user a participant
         EventParticipant.objects.create(
             event=event,
             user=another_user,
@@ -348,8 +328,6 @@ class TestPhotoCreateView:
         assert 'url' in response.data
 
 
-# ============== UPDATE TESTS ==============
-
 @pytest.mark.django_db
 class TestPhotoUpdateView:
     """Tests for updating photos (PUT/PATCH /api/photos/{id}/)."""
@@ -417,8 +395,6 @@ class TestPhotoUpdateView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# ============== DELETE TESTS ==============
-
 @pytest.mark.django_db
 class TestPhotoDeleteView:
     """Tests for deleting photos (DELETE /api/photos/{id}/)."""
@@ -430,20 +406,17 @@ class TestPhotoDeleteView:
         response = api_client.delete(url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        # Soft delete - object still exists but is_deleted is True
         photo.refresh_from_db()
         assert photo.is_deleted
 
     def test_delete_photo_success_by_organizer(self, api_client, user, another_user, event):
         """Test successful photo deletion by event organizer."""
-        # Another user uploads photo
         photo = EventPhoto.objects.create(
             event=event,
             uploaded_by=another_user,
             url='https://example.com/test.jpg'
         )
         
-        # Organizer (user) deletes it
         api_client.force_authenticate(user=user)
         url = reverse('media:photo-detail', kwargs={'pk': photo.pk})
         response = api_client.delete(url)
@@ -496,8 +469,6 @@ class TestPhotoDeleteView:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-# ============== COVER PHOTO TESTS ==============
-
 @pytest.mark.django_db
 class TestCoverPhotoActions:
     """Tests for cover photo management endpoints."""
@@ -536,7 +507,6 @@ class TestCoverPhotoActions:
 
     def test_set_cover_replaces_existing_cover(self, api_client, user, event):
         """Test that setting new cover removes old cover."""
-        # Create two photos
         photo1 = EventPhoto.objects.create(
             event=event,
             uploaded_by=user,
@@ -549,7 +519,6 @@ class TestCoverPhotoActions:
             url='https://example.com/photo2.jpg'
         )
         
-        # Set photo2 as cover
         api_client.force_authenticate(user=user)
         url = reverse('media:photo-set-cover', kwargs={'pk': photo2.pk})
         response = api_client.post(url)
@@ -599,15 +568,12 @@ class TestCoverPhotoActions:
         assert photo.is_cover
 
 
-# ============== EVENT PHOTOS ENDPOINT TESTS ==============
-
 @pytest.mark.django_db
 class TestEventPhotosView:
     """Tests for event photos endpoint (GET /api/events/{id}/photos/)."""
 
     def test_get_event_photos_success(self, api_client, user, event):
         """Test retrieving photos for an event."""
-        # Create photos for the event
         photo1 = EventPhoto.objects.create(
             event=event,
             uploaded_by=user,
@@ -632,7 +598,6 @@ class TestEventPhotosView:
         assert response.data['event_title'] == event.title
         assert len(response.data['results']) == 2
         
-        # Cover photo should be first
         assert response.data['results'][0]['is_cover'] is True
         assert response.data['results'][0]['caption'] == 'Second photo'
 
@@ -665,7 +630,6 @@ class TestEventPhotosView:
         """Test that only photos for the specific event are returned."""
         from datetime import datetime, timedelta
         
-        # Create another event
         another_event = Event.objects.create(
             title='Another Event',
             description='Another description',
@@ -674,7 +638,6 @@ class TestEventPhotosView:
             city=city
         )
         
-        # Create photos for both events
         EventPhoto.objects.create(event=event, uploaded_by=user, url='https://example.com/1.jpg')
         EventPhoto.objects.create(event=another_event, uploaded_by=user, url='https://example.com/2.jpg')
         
@@ -687,8 +650,6 @@ class TestEventPhotosView:
         assert response.data['results'][0]['url'] == 'https://example.com/1.jpg'
 
 
-# ============== PERMISSION TESTS ==============
-
 @pytest.mark.django_db
 class TestPhotoPermissions:
     """Comprehensive tests for photo permissions."""
@@ -699,7 +660,6 @@ class TestPhotoPermissions:
         
         list_url = reverse('media:photo-list')
 
-        # Can upload
         response = api_client.post(
             list_url,
             {'event': event.id, 'url': 'https://example.com/photo.jpg'},
@@ -710,7 +670,6 @@ class TestPhotoPermissions:
         
         detail_url = reverse('media:photo-detail', kwargs={'pk': photo_id})
         
-        # Can update
         response = api_client.patch(
             detail_url,
             {'caption': 'Updated'},
@@ -718,13 +677,11 @@ class TestPhotoPermissions:
         )
         assert response.status_code == status.HTTP_200_OK
         
-        # Can delete
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_participant_can_upload_but_limited_delete(self, api_client, another_user, user, event):
         """Test that participants can upload but have limited permissions."""
-        # Make another_user a participant
         EventParticipant.objects.create(
             event=event,
             user=another_user,
@@ -734,7 +691,6 @@ class TestPhotoPermissions:
         api_client.force_authenticate(user=another_user)
         list_url = reverse('media:photo-list')
         
-        # Can upload
         response = api_client.post(
             list_url,
             {'event': event.id, 'url': 'https://example.com/photo.jpg'},
@@ -743,7 +699,6 @@ class TestPhotoPermissions:
         assert response.status_code == status.HTTP_201_CREATED
         photo_id = response.data['id']
         
-        # Can update own photo
         detail_url = reverse('media:photo-detail', kwargs={'pk': photo_id})
         response = api_client.patch(
             detail_url,
@@ -752,13 +707,11 @@ class TestPhotoPermissions:
         )
         assert response.status_code == status.HTTP_200_OK
         
-        # Can delete own photo
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_admin_has_full_access(self, api_client, admin_user, user, event):
         """Test that admin users have full access to all photos."""
-        # Create photo as regular user
         photo = EventPhoto.objects.create(
             event=event,
             uploaded_by=user,
@@ -768,7 +721,6 @@ class TestPhotoPermissions:
         api_client.force_authenticate(user=admin_user)
         detail_url = reverse('media:photo-detail', kwargs={'pk': photo.pk})
         
-        # Can delete others' photos
         response = api_client.delete(detail_url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
 

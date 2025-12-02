@@ -1,10 +1,3 @@
-"""
-Serializers for Event Invitation management.
-
-This module contains serializers for creating, updating, and displaying
-event invitations with proper validation and nested relationships.
-"""
-
 from rest_framework.serializers import (
     ModelSerializer,
     SerializerMethodField,
@@ -132,7 +125,6 @@ class EventInvitationCreateSerializer(ModelSerializer):
         event = data.get('event')
         invited_user_email = data.get('invited_user_email')
         
-        # Get invited user by email
         try:
             invited_user = User.objects.get(email=invited_user_email, is_deleted=False)
         except User.DoesNotExist:
@@ -140,43 +132,36 @@ class EventInvitationCreateSerializer(ModelSerializer):
                 'invited_user_email': 'User with this email does not exist'
             })
         
-        # Check if event is deleted
         if event.is_deleted:
             raise ValidationError({'event': 'Cannot invite to a deleted event'})
         
-        # Check if inviter has permission
         if not event.can_user_invite(request.user):
             raise ValidationError(
                 'You do not have permission to invite users to this event'
             )
         
-        # Check if invited user is the organizer
         if invited_user == event.organizer:
             raise ValidationError({
                 'invited_user_email': 'Cannot invite the event organizer'
             })
         
-        # Check if user is already a participant
         from apps.participants.models import EventParticipant
         if EventParticipant.objects.filter(event=event, user=invited_user).exists():
             raise ValidationError({
                 'invited_user_email': 'User is already a participant of this event'
             })
         
-        # Check if invitation already exists
         if EventInvitation.objects.filter(event=event, invited_user=invited_user).exists():
             raise ValidationError({
                 'invited_user_email': 'Invitation already exists for this user'
             })
         
-        # Check if invited user can receive invitations
         if not invited_user.can_be_invited_by(request.user):
             privacy = invited_user.get_invitation_privacy_display()
             raise ValidationError({
                 'invited_user_email': f'User privacy settings ({privacy}) prevent invitations from you'
             })
         
-        # Add invited_user to validated data
         data['invited_user'] = invited_user
         data['invited_by'] = request.user
         
@@ -192,7 +177,6 @@ class EventInvitationCreateSerializer(ModelSerializer):
         Returns:
             EventInvitation: The newly created invitation instance.
         """
-        # Remove email from validated data
         validated_data.pop('invited_user_email', None)
         
         return EventInvitation.objects.create(**validated_data)
@@ -246,13 +230,11 @@ class EventInvitationResponseSerializer(ModelSerializer):
         """
         invitation = self.instance
         
-        # Check if invitation is pending
         if invitation.status != INVITATION_STATUS_PENDING:
             raise ValidationError(
                 f'Cannot respond to invitation with status: {invitation.status}'
             )
         
-        # Check if event is not full (only for accept)
         if data['action'] == 'accept' and invitation.event.is_full():
             raise ValidationError('Event has reached maximum capacity')
         

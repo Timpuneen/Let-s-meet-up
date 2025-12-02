@@ -1,10 +1,3 @@
-"""
-Permissions for Event Invitations.
-
-This module contains custom permission classes for invitation management,
-controlling who can create, view, and respond to invitations.
-"""
-
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
@@ -32,7 +25,6 @@ class CanInviteToEvent(BasePermission):
         Returns:
             bool: True if user can invite, False otherwise.
         """
-        # For invitations, check the event's invitation permissions
         return obj.event.can_user_invite(request.user)
 
 
@@ -60,7 +52,6 @@ class IsInvitedUserOrInviterOrReadOnly(BasePermission):
         Returns:
             bool: True if user can access invitation, False otherwise.
         """
-        # Read access for invited user, inviter, and event organizer
         if request.method in SAFE_METHODS:
             return (
                 request.user == obj.invited_user or
@@ -68,7 +59,6 @@ class IsInvitedUserOrInviterOrReadOnly(BasePermission):
                 request.user == obj.event.organizer
             )
         
-        # Write access (accept/reject) only for invited user
         return request.user == obj.invited_user
 
 
@@ -123,14 +113,11 @@ class IsEventParticipant(BasePermission):
         """
         from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
         
-        # Get event from invitation or directly
         event = obj.event if hasattr(obj, 'event') else obj
         
-        # Check if user is organizer
         if request.user == event.organizer:
             return True
         
-        # Check if user is participant
         return EventParticipant.objects.filter(
             event=event,
             user=request.user,

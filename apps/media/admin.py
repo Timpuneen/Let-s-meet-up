@@ -1,7 +1,3 @@
-"""
-Admin configuration for EventPhoto model.
-"""
-
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -46,8 +42,6 @@ class EventPhotoAdmin(ModelAdmin):
     @display(description=_('Photo'), header=True)
     def photo_preview(self, obj):
         if obj.url:
-            # Use mark_safe for header columns with HTML
-            # Add onerror handler for broken images
             return [
                 mark_safe(
                     f'<img src="{obj.url}" '

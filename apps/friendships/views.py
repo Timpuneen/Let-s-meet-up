@@ -1,10 +1,3 @@
-"""
-Views for Friendship management.
-
-This module contains ViewSets for creating, viewing, and responding
-to friend requests with proper permissions and filtering.
-"""
-
 from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -57,11 +50,9 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Friendship.objects.select_related('sender', 'receiver')
         
-        # ВСЕГДА показывать все связи, где пользователь участвует
-        # (для безопасности полагаемся на permissions)
+
         queryset = queryset.filter(Q(sender=user) | Q(receiver=user))
         
-        # Фильтры для list action (чтобы сохранить функциональность)
         if self.action == 'list':
             friendship_type = self.request.query_params.get('type', 'received')
             
@@ -69,9 +60,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(sender=user)
             elif friendship_type == 'received':
                 queryset = queryset.filter(receiver=user)
-            # 'all' уже включено в базовый фильтр Q(sender=user) | Q(receiver=user)
         
-        # Filter by status
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
@@ -109,7 +98,6 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         friendship = serializer.save()
         
-        # Return full friendship data
         response_serializer = FriendshipSerializer(friendship)
         return Response(
             response_serializer.data,
@@ -155,14 +143,12 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         friendship = self.get_object()
         user = request.user
         
-        # Check permissions
         if user not in [friendship.sender, friendship.receiver]:
             return Response(
                 {'detail': 'You are not involved in this friendship'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Delete the friendship
         friendship.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
@@ -195,7 +181,6 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         friendship = serializer.save()
         
-        # Return full friendship data
         response_serializer = FriendshipSerializer(friendship)
         return Response(response_serializer.data)
     
@@ -238,13 +223,11 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         """
         user = request.user
         
-        # Get all accepted friendships
         friendships = Friendship.objects.filter(
             Q(sender=user) | Q(receiver=user),
             status=FRIENDSHIP_STATUS_ACCEPTED
         ).select_related('sender', 'receiver')
         
-        # Extract friend users
         friends = []
         for friendship in friendships:
             friend = friendship.receiver if friendship.sender == user else friendship.sender
@@ -335,7 +318,6 @@ class FriendshipViewSet(viewsets.ModelViewSet):
                 'message': 'This is your own account'
             })
         
-        # Check friendship in both directions
         friendship = Friendship.objects.filter(
             Q(sender=request.user, receiver=other_user) |
             Q(sender=other_user, receiver=request.user)
@@ -363,7 +345,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         elif friendship.status == FRIENDSHIP_STATUS_ACCEPTED:
             response_data['message'] = 'You are friends'
             response_data['can_unfriend'] = True
-        else:  # rejected
+        else: 
             response_data['message'] = 'Friend request was rejected'
             response_data['can_send_request'] = True
         

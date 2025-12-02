@@ -1,12 +1,3 @@
-"""
-Custom permissions for photo management.
-
-This module contains permission classes for controlling access
-to photo upload, editing, and deletion operations.
-"""
-
-from typing import Any
-
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.request import Request
 from rest_framework.views import APIView
@@ -39,7 +30,6 @@ class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
         Returns:
             bool: True if the user has permission, False otherwise.
         """
-        # All operations require authentication
         return request.user and request.user.is_authenticated
     
     def has_object_permission(self, request: Request, view: APIView, obj: EventPhoto) -> bool:
@@ -54,15 +44,12 @@ class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
         Returns:
             bool: True if the user has permission, False otherwise.
         """
-        # Read operations are allowed for authenticated users
         if request.method in SAFE_METHODS:
             return True
         
-        # Update permissions are only for the photo uploader
         if request.method in ['PUT', 'PATCH']:
             return obj.uploaded_by == request.user
         
-        # Delete permissions: uploader, event organizer, or admin
         if request.method == 'DELETE':
             return (
                 obj.uploaded_by == request.user or
@@ -70,7 +57,6 @@ class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
                 request.user.is_staff
             )
         
-        # For any other operations, deny by default
         return False
 
 

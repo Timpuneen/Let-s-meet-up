@@ -1,5 +1,3 @@
-"""Configuration for the participants app."""
-
 from django.apps import AppConfig
 
 

@@ -1,17 +1,8 @@
-"""
-ViewSet for managing EventPhoto instances.
-
-This module provides RESTful API endpoints for photo operations
-including CRUD operations, filtering, pagination, and cover photo management.
-"""
-
-from typing import List, Optional
-
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 
@@ -124,20 +115,16 @@ class PhotoViewSet(ViewSet):
         """
         queryset = self.get_queryset()
         
-        # Filter by event if provided
         event_id = request.query_params.get('event')
         if event_id:
             queryset = queryset.filter(event_id=event_id)
         
-        # Filter by user if provided
         user_id = request.query_params.get('user')
         if user_id:
             queryset = queryset.filter(uploaded_by_id=user_id)
         
-        # Order by cover status first, then creation date
         queryset = queryset.order_by('-is_cover', '-created_at')
         
-        # Paginate
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request)
         
@@ -157,7 +144,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def retrieve(self, request: Request, pk: Optional[int] = None) -> Response:
+    def retrieve(self, request: Request, pk: int) -> Response:
         """
         Retrieve photo details.
         
@@ -196,10 +183,8 @@ class PhotoViewSet(ViewSet):
         serializer = PhotoCreateSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         
-        # Set the uploader from the request
         photo = serializer.save(uploaded_by=request.user)
         
-        # Return full photo data
         response_serializer = PhotoSerializer(photo)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
@@ -216,7 +201,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def update(self, request: Request, pk: Optional[int] = None) -> Response:
+    def update(self, request: Request, pk: int) -> Response:
         """
         Update a photo.
         
@@ -230,7 +215,6 @@ class PhotoViewSet(ViewSet):
         """
         photo = get_object_or_404(self.get_queryset(), pk=pk)
         
-        # Check object-level permissions
         self.check_object_permissions(request, photo)
         
         partial = request.method == 'PATCH'
@@ -242,7 +226,6 @@ class PhotoViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
         photo = serializer.save()
         
-        # Return full photo data
         response_serializer = PhotoSerializer(photo)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
     
@@ -259,7 +242,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def partial_update(self, request: Request, pk: Optional[int] = None) -> Response:
+    def partial_update(self, request: Request, pk: int) -> Response:
         """
         Partially update a photo.
         
@@ -284,7 +267,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def destroy(self, request: Request, pk: Optional[int] = None) -> Response:
+    def destroy(self, request: Request, pk: int) -> Response:
         """
         Delete a photo (soft delete).
         
@@ -298,7 +281,6 @@ class PhotoViewSet(ViewSet):
         """
         photo = get_object_or_404(self.get_queryset(), pk=pk)
         
-        # Check object-level permissions
         self.check_object_permissions(request, photo)
         
         photo.delete()
@@ -316,7 +298,7 @@ class PhotoViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEventOrganizerOrAdmin])
-    def set_cover(self, request: Request, pk: Optional[int] = None) -> Response:
+    def set_cover(self, request: Request, pk: int) -> Response:
         """
         Set photo as event cover.
         
@@ -331,13 +313,10 @@ class PhotoViewSet(ViewSet):
         """
         photo = get_object_or_404(self.get_queryset(), pk=pk)
         
-        # Check object-level permissions
         self.check_object_permissions(request, photo)
         
-        # Set as cover (automatically removes cover from others)
         photo.set_as_cover()
         
-        # Return updated photo data
         serializer = PhotoSerializer(photo)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -353,7 +332,7 @@ class PhotoViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEventOrganizerOrAdmin])
-    def remove_cover(self, request: Request, pk: Optional[int] = None) -> Response:
+    def remove_cover(self, request: Request, pk: int) -> Response:
         """
         Remove cover status from photo.
         
@@ -367,13 +346,10 @@ class PhotoViewSet(ViewSet):
         """
         photo = get_object_or_404(self.get_queryset(), pk=pk)
         
-        # Check object-level permissions
         self.check_object_permissions(request, photo)
         
-        # Remove cover status
         photo.remove_as_cover()
         
-        # Return updated photo data
         serializer = PhotoSerializer(photo)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

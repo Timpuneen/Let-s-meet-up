@@ -15,7 +15,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 
-
 class UserSerializer(Serializer):
     """Serializer for User model.
 

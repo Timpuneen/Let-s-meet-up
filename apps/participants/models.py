@@ -1,10 +1,3 @@
-"""
-Participant models for event registration and management.
-
-This module contains models for managing event participants,
-their status, and administrative privileges.
-"""
-
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -112,7 +105,6 @@ class EventParticipant(AbstractTimestampedModel):
         if self.user == self.event.organizer:
             raise ValidationError('Organizer is automatically a participant')
         
-        # Check capacity only for new participants
         if self.pk is None and self.event.is_full():
             raise ValidationError('Event has reached maximum capacity')
     
@@ -124,7 +116,6 @@ class EventParticipant(AbstractTimestampedModel):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
-        # Always set status to accepted for participants
         self.status = PARTICIPANT_STATUS_ACCEPTED
         self.full_clean()
         super().save(*args, **kwargs)
