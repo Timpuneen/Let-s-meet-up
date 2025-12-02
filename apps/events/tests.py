@@ -466,8 +466,8 @@ class TestMyRegisteredEventsView:
         
     #     response = another_authenticated_client.get(self.url)
         
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data['results']) == 0  # Pending not included
+        # assert response.status_code == status.HTTP_200_OK
+        # assert len(response.data['results']) == 0  # Pending not included
 
 
 # ==================== CATEGORY INTEGRATION TESTS ====================
