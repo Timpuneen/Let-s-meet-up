@@ -1,10 +1,22 @@
-from django.urls import path
-from .views import SignupView, LoginView, MeView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+
+from .views import AuthViewSet, CustomTokenRefreshView
 
 app_name = 'users'
 
+# Create router and register viewsets
+router = DefaultRouter()
+router.register(r'', AuthViewSet, basename='auth')
+
 urlpatterns = [
-    path('signup/', SignupView.as_view(), name='signup'),
-    path('login/', LoginView.as_view(), name='login'),
-    path('me/', MeView.as_view(), name='me'),
+    # JWT token refresh endpoint
+    path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
+    
+    # Auth endpoints from viewset
+    # This will create:
+    # POST /api/auth/signup/
+    # POST /api/auth/login/
+    # GET  /api/auth/me/
+    path('', include(router.urls)),
 ]
