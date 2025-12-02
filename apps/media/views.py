@@ -5,14 +5,18 @@ This module provides RESTful API endpoints for photo operations
 including CRUD operations, filtering, pagination, and cover photo management.
 """
 
+from typing import List, Optional
+
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 
 from django.shortcuts import get_object_or_404
+from django.db.models import QuerySet
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -55,7 +59,7 @@ class PhotoViewSet(ViewSet):
     permission_classes = [IsAuthenticated, IsPhotoUploaderOrOrganizerOrAdmin]
     pagination_class = PhotoPagination
     
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """
         Get the queryset of photos.
         
@@ -105,7 +109,7 @@ class PhotoViewSet(ViewSet):
             ),
         },
     )
-    def list(self, request):
+    def list(self, request: Request) -> Response:
         """
         List all photos with optional filtering.
         
@@ -153,7 +157,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Retrieve photo details.
         
@@ -179,7 +183,7 @@ class PhotoViewSet(ViewSet):
             403: OpenApiResponse(description='Not a participant or organizer'),
         },
     )
-    def create(self, request):
+    def create(self, request: Request) -> Response:
         """
         Upload a new photo.
         
@@ -212,7 +216,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def update(self, request, pk=None):
+    def update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Update a photo.
         
@@ -255,7 +259,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def partial_update(self, request, pk=None):
+    def partial_update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Partially update a photo.
         
@@ -280,7 +284,7 @@ class PhotoViewSet(ViewSet):
             404: OpenApiResponse(description='Photo not found'),
         },
     )
-    def destroy(self, request, pk=None):
+    def destroy(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Delete a photo (soft delete).
         
@@ -312,7 +316,7 @@ class PhotoViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEventOrganizerOrAdmin])
-    def set_cover(self, request, pk=None):
+    def set_cover(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Set photo as event cover.
         
@@ -349,7 +353,7 @@ class PhotoViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEventOrganizerOrAdmin])
-    def remove_cover(self, request, pk=None):
+    def remove_cover(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Remove cover status from photo.
         
