@@ -5,7 +5,13 @@ This module contains permission classes for controlling access
 to photo upload, editing, and deletion operations.
 """
 
+from typing import Any
+
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.request import Request
+from rest_framework.views import APIView
+
+from apps.media.models import EventPhoto
 
 
 class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
@@ -22,7 +28,7 @@ class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
     while allowing flexibility for event organizers and administrators.
     """
     
-    def has_permission(self, request, view):
+    def has_permission(self, request: Request, view: APIView) -> bool:
         """
         Check if the user has permission to perform the action.
         
@@ -36,7 +42,7 @@ class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
         # All operations require authentication
         return request.user and request.user.is_authenticated
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: EventPhoto) -> bool:
         """
         Check if the user has permission to perform the action on a specific photo.
         
@@ -75,7 +81,7 @@ class IsEventOrganizerOrAdmin(BasePermission):
     Only event organizers and admins can set/remove cover photos.
     """
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: EventPhoto) -> bool:
         """
         Check if the user can manage cover photo status.
         

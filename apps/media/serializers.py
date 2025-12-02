@@ -5,6 +5,8 @@ This module contains serializers for the EventPhoto model,
 supporting CRUD operations and photo management.
 """
 
+from typing import Any, Dict
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -72,7 +74,7 @@ class PhotoCreateSerializer(serializers.ModelSerializer):
         model = EventPhoto
         fields = ['event', 'url', 'caption']
     
-    def validate_url(self, value):
+    def validate_url(self, value: str) -> str:
         """
         Validate that the URL is properly formatted.
         
@@ -94,7 +96,7 @@ class PhotoCreateSerializer(serializers.ModelSerializer):
         
         return value
     
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate photo data.
         
@@ -137,7 +139,7 @@ class PhotoCreateSerializer(serializers.ModelSerializer):
         
         return data
     
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> EventPhoto:
         """
         Create a new EventPhoto instance.
         
@@ -165,7 +167,7 @@ class PhotoUpdateSerializer(serializers.ModelSerializer):
         model = EventPhoto
         fields = ['url', 'caption']
     
-    def validate_url(self, value):
+    def validate_url(self, value: str) -> str:
         """
         Validate that the URL is properly formatted.
         
@@ -183,7 +185,7 @@ class PhotoUpdateSerializer(serializers.ModelSerializer):
         
         return value
     
-    def update(self, instance, validated_data):
+    def update(self, instance: EventPhoto, validated_data: Dict[str, Any]) -> EventPhoto:
         """
         Update an existing EventPhoto instance.
         
