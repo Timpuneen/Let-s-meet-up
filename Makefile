@@ -12,3 +12,15 @@ stop-docker:
 
 seed-docker:
 	docker compose exec web uv run python manage.py seed_data
+
+test:
+	uv run pytest -v
+
+test-docker:
+	docker compose exec web uv run pytest -v
+
+test-comments:
+	uv run pytest apps/comments/tests.py -v
+
+test-comments-docker:
+	docker compose exec web uv run pytest apps/comments/tests.py -v
