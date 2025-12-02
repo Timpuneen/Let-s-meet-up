@@ -6,6 +6,10 @@ to comment creation, editing, and deletion operations.
 """
 
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.request import Request
+from rest_framework.views import APIView
+
+from apps.comments.models import EventComment
 
 
 class IsCommentOwnerOrAdminOrReadOnly(BasePermission):
@@ -21,7 +25,7 @@ class IsCommentOwnerOrAdminOrReadOnly(BasePermission):
     unless they are administrators who have permissions to manage all comments.
     """
     
-    def has_permission(self, request, view):
+    def has_permission(self, request: Request, view: APIView) -> bool:
         """
         Check if the user has permission to perform the action.
         
@@ -40,7 +44,7 @@ class IsCommentOwnerOrAdminOrReadOnly(BasePermission):
         # Allow update/delete operations for authenticated users (object-level check below)
         return request.user and request.user.is_authenticated
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: EventComment) -> bool:
         """
         Check if the user has permission to perform the action on a specific comment.
         

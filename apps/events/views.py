@@ -5,14 +5,17 @@ This module contains viewsets for CRUD operations on events,
 with custom permissions, query optimization, and participant management.
 """
 
+from typing import List, Optional
+
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.request import Request
+from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
 
 from django.utils import timezone
-from django.db.models import Prefetch
+from django.db.models import Prefetch, QuerySet
 from django.shortcuts import get_object_or_404
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
@@ -21,6 +24,8 @@ from drf_spectacular.types import OpenApiTypes
 from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
 from apps.comments.models import EventComment
 from apps.comments.serializers import CommentListSerializer
+from apps.media.models import EventPhoto
+from apps.media.serializers import PhotoListSerializer
 
 from .models import Event, EVENT_STATUS_PUBLISHED
 from .serializers import (
@@ -49,7 +54,7 @@ class EventViewSet(ViewSet):
     serializer_class = EventSerializer
     queryset = Event.objects.all()
     
-    def get_permissions(self):
+    def get_permissions(self) -> List[BasePermission]:
         """
         Instantiate and return the list of permissions that this view requires.
         
@@ -64,7 +69,7 @@ class EventViewSet(ViewSet):
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
     
-    def _get_base_queryset(self):
+    def _get_base_queryset(self) -> QuerySet[Event]:
         """
         Get optimized base queryset with select_related and prefetch_related.
         
@@ -94,7 +99,7 @@ class EventViewSet(ViewSet):
             200: OpenApiResponse(response=EventListSerializer(many=True), description='List of events'),
         },
     )
-    def list(self, request):
+    def list(self, request: Request) -> Response:
         """
         List all published upcoming events.
         
@@ -124,7 +129,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Retrieve event details.
         
@@ -149,7 +154,7 @@ class EventViewSet(ViewSet):
             401: OpenApiResponse(description='Authentication required'),
         },
     )
-    def create(self, request):
+    def create(self, request: Request) -> Response:
         """
         Create a new event.
         
@@ -177,7 +182,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def update(self, request, pk=None):
+    def update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Update an event.
         
@@ -223,7 +228,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def partial_update(self, request, pk=None):
+    def partial_update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Partially update an event.
         
@@ -246,7 +251,7 @@ class EventViewSet(ViewSet):
             404: OpenApiResponse(description='Event not found'),
         },
     )
-    def destroy(self, request, pk=None):
+    def destroy(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Soft delete an event.
         
@@ -281,7 +286,7 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def register(self, request, pk=None):
+    def register(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Register current user for the event.
         """
@@ -333,7 +338,7 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def unregister(self, request, pk=None):
+    def unregister(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Cancel registration for the event.
         """
@@ -367,7 +372,7 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-    def my_organized(self, request):
+    def my_organized(self, request: Request) -> Response:
         """
         List events organized by the current user.
         """
@@ -392,7 +397,7 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-    def my_registered(self, request):
+    def my_registered(self, request: Request) -> Response:
         """
         List events the current user is registered for.
         """
@@ -461,6 +466,60 @@ class EventViewSet(ViewSet):
         
         return Response({
             'count': comments.count(),
+            'event': event.id,
+            'event_title': event.title,
+            'results': serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    @extend_schema(
+        tags=['Events'],
+        summary='Get all photos for event',
+        description='Returns a list of all photos for a specific event, ordered by cover status and creation date.',
+        parameters=[
+            OpenApiParameter(
+                name='page_size',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Number of items per page (max 100)',
+                required=False,
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PhotoListSerializer(many=True),
+                description='List of photos for the event'
+            ),
+            401: OpenApiResponse(description='Authentication required'),
+            404: OpenApiResponse(description='Event not found'),
+        },
+    )
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def photos(self, request, pk=None):
+        """
+        Get all photos for a specific event.
+        
+        Returns all photos associated with the event, ordered by cover status
+        (cover photo first) then creation date.
+        Supports pagination through page_size query parameter.
+        
+        Args:
+            pk: Event ID.
+        
+        Returns:
+            Response: List of photos (200) or errors.
+        """
+        event = get_object_or_404(Event.objects.all(), pk=pk)
+        
+        # Get all photos for this event, ordered by cover status and creation date
+        photos = EventPhoto.objects.filter(event=event).select_related(
+            'uploaded_by'
+        ).order_by('-is_cover', '-created_at')
+        
+        # Serialize photos
+        serializer = PhotoListSerializer(photos, many=True)
+        
+        return Response({
+            'count': photos.count(),
             'event': event.id,
             'event_title': event.title,
             'results': serializer.data

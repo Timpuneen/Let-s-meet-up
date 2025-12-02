@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 from django.contrib.auth import authenticate
 
 from rest_framework.serializers import (
@@ -52,7 +54,7 @@ class UserRegistrationSerializer(Serializer):
         help_text="Confirm your password",
     )
 
-    def validate_email(self, value):
+    def validate_email(self, value: str) -> str:
         """Validate email is unique and properly formatted.
 
         Args:
@@ -69,7 +71,7 @@ class UserRegistrationSerializer(Serializer):
             raise ValidationError("User with this email already exists")
         return value
 
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate password confirmation matches.
 
         Args:
@@ -86,7 +88,7 @@ class UserRegistrationSerializer(Serializer):
         data.pop("password_confirm")
         return data
 
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> User:
         """Create a new user with hashed password.
 
         Args:
@@ -114,7 +116,7 @@ class LoginSerializer(Serializer):
         write_only=True, style={"input_type": "password"}, help_text="User password"
     )
 
-    def validate_email(self, value):
+    def validate_email(self, value: str) -> str:
         """Normalize email to lowercase.
 
         Args:
@@ -125,7 +127,7 @@ class LoginSerializer(Serializer):
         """
         return value.lower().strip()
 
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate user credentials and account status.
 
         Args:
@@ -168,7 +170,7 @@ class AuthTokenSerializer(Serializer):
     user = UserSerializer(read_only=True)
     tokens = SerializerMethodField()
 
-    def get_tokens(self, obj):
+    def get_tokens(self, obj: Dict[str, Any]) -> Dict[str, str]:
         """Generate JWT tokens for the user.
 
         Args:

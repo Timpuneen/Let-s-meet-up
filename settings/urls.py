@@ -18,6 +18,11 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/', include('apps.users.urls')),
+    path('api/events/', include('apps.events.urls')),
+    path('api/categories/', include('apps.categories.urls')),
+    path('api/comments/', include('apps.comments.urls')),
+    path('api/photos/', include('apps.media.urls')),
 
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

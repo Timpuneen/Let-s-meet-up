@@ -1,8 +1,11 @@
+from typing import List, Any
+
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
 from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
@@ -25,7 +28,7 @@ class AuthViewSet(ViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
-    def get_permissions(self):
+    def get_permissions(self) -> List[BasePermission]:
         """
         Instantiate and return the list of permissions that this view requires.
 
@@ -52,7 +55,7 @@ class AuthViewSet(ViewSet):
         description="Create a new user account with email, name, and password. Returns user data and JWT tokens.",
     )
     @action(detail=False, methods=["post"])
-    def signup(self, request):
+    def signup(self, request: Request) -> Response:
         """
         Register a new user account.
 
@@ -88,7 +91,7 @@ class AuthViewSet(ViewSet):
         description="Authenticate with email and password. Returns user data and JWT tokens.",
     )
     @action(detail=False, methods=["post"])
-    def login(self, request):
+    def login(self, request: Request) -> Response:
         """
         Authenticate user and get JWT tokens.
 
@@ -122,7 +125,7 @@ class AuthViewSet(ViewSet):
         description="Retrieve the profile of the currently authenticated user.",
     )
     @action(detail=False, methods=["get"])
-    def me(self, request):
+    def me(self, request: Request) -> Response:
         """
         Get current authenticated user information.
 
@@ -155,5 +158,5 @@ class CustomTokenRefreshView(TokenRefreshView):
         summary="Refresh access token",
         description="Generate a new access token using a valid refresh token.",
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return super().post(request, *args, **kwargs)

@@ -5,6 +5,8 @@ This module contains serializers for the EventComment model,
 supporting CRUD operations and nested reply structures.
 """
 
+from typing import Any, Dict, List
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -39,7 +41,7 @@ class CommentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
     
-    def get_depth(self, obj):
+    def get_depth(self, obj: EventComment) -> int:
         """
         Get the depth of this comment in the thread.
         
@@ -51,7 +53,7 @@ class CommentSerializer(serializers.ModelSerializer):
         """
         return obj.get_depth()
     
-    def get_reply_count(self, obj):
+    def get_reply_count(self, obj: EventComment) -> int:
         """
         Get the total number of replies to this comment.
         
@@ -90,11 +92,11 @@ class CommentListSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at']
     
-    def get_depth(self, obj):
+    def get_depth(self, obj: EventComment) -> int:
         """Get the depth of this comment in the thread."""
         return obj.get_depth()
     
-    def get_reply_count(self, obj):
+    def get_reply_count(self, obj: EventComment) -> int:
         """Get the total number of replies to this comment."""
         return obj.get_reply_count()
 
@@ -111,7 +113,7 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         model = EventComment
         fields = ['event', 'parent', 'content']
     
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate comment data.
         
@@ -144,7 +146,7 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         
         return data
     
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> EventComment:
         """
         Create a new EventComment instance.
         
@@ -172,7 +174,7 @@ class CommentUpdateSerializer(serializers.ModelSerializer):
         model = EventComment
         fields = ['content']
     
-    def update(self, instance, validated_data):
+    def update(self, instance: EventComment, validated_data: Dict[str, Any]) -> EventComment:
         """
         Update an existing EventComment instance.
         
@@ -215,11 +217,11 @@ class NestedReplySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
     
-    def get_depth(self, obj):
+    def get_depth(self, obj: EventComment) -> int:
         """Get the depth of this comment in the thread."""
         return obj.get_depth()
     
-    def get_replies(self, obj):
+    def get_replies(self, obj: EventComment) -> List[Dict[str, Any]]:
         """
         Get all direct replies to this comment.
         

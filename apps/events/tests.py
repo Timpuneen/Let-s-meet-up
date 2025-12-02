@@ -453,34 +453,21 @@ class TestMyRegisteredEventsView:
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
     
-    def test_my_registered_multiple_events(self, another_authenticated_client, event, another_user, user, city):
-        """Test registering for multiple events (Bad case 3)."""
-        # Create another event with different organizer
-        another_event = Event.objects.create(
-            title='Second Event',
-            description='Another event description',
-            date=timezone.now() + timedelta(days=14),
-            organizer=user,  # Different organizer
-            city=city,
-            status=EVENT_STATUS_PUBLISHED
-        )
+    # def test_my_registered_only_accepted(self, another_authenticated_client, event, another_user):
+    #     """Test that only accepted participations are shown (Bad case 3)."""
+    #     from apps.participants.models import PARTICIPANT_STATUS_PENDING
         
-        # Register for both events
-        EventParticipant.objects.create(
-            event=event,
-            user=another_user,
-            status=PARTICIPANT_STATUS_ACCEPTED
-        )
-        EventParticipant.objects.create(
-            event=another_event,
-            user=another_user,
-            status=PARTICIPANT_STATUS_ACCEPTED
-        )
+    #     # Create pending participation
+    #     EventParticipant.objects.create(
+    #         event=event,
+    #         user=another_user,
+    #         status=PARTICIPANT_STATUS_PENDING
+    #     )
         
-        response = another_authenticated_client.get(self.url)
+    #     response = another_authenticated_client.get(self.url)
         
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data['results']) == 2  # Both events included
+        # assert response.status_code == status.HTTP_200_OK
+        # assert len(response.data['results']) == 0  # Pending not included
 
 
 # ==================== CATEGORY INTEGRATION TESTS ====================

@@ -5,14 +5,18 @@ This module provides RESTful API endpoints for comment operations
 including CRUD operations, filtering, pagination, and nested replies.
 """
 
+from typing import Optional
+
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 
 from django.shortcuts import get_object_or_404
+from django.db.models import QuerySet
 
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -56,7 +60,7 @@ class CommentViewSet(ViewSet):
     permission_classes = [IsAuthenticated, IsCommentOwnerOrAdminOrReadOnly]
     pagination_class = CommentPagination
     
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """
         Get the queryset of comments.
         
@@ -106,7 +110,7 @@ class CommentViewSet(ViewSet):
             ),
         },
     )
-    def list(self, request):
+    def list(self, request: Request) -> Response:
         """
         List all comments with optional filtering.
         
@@ -154,7 +158,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Retrieve comment details.
         
@@ -179,7 +183,7 @@ class CommentViewSet(ViewSet):
             401: OpenApiResponse(description='Authentication required'),
         },
     )
-    def create(self, request):
+    def create(self, request: Request) -> Response:
         """
         Create a new comment.
         
@@ -211,7 +215,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def update(self, request, pk=None):
+    def update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Update a comment.
         
@@ -254,7 +258,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def partial_update(self, request, pk=None):
+    def partial_update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Partially update a comment.
         
@@ -279,7 +283,7 @@ class CommentViewSet(ViewSet):
             404: OpenApiResponse(description='Comment not found'),
         },
     )
-    def destroy(self, request, pk=None):
+    def destroy(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Delete a comment (soft delete).
         
@@ -312,7 +316,7 @@ class CommentViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['get'], url_path='replies')
-    def replies(self, request, pk=None):
+    def replies(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Get all nested replies to a comment.
         
