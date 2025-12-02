@@ -14,13 +14,11 @@ from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPT
 
 
 # Constants for event status choices
-EVENT_STATUS_DRAFT = 'draft'
 EVENT_STATUS_PUBLISHED = 'published'
 EVENT_STATUS_CANCELLED = 'cancelled'
 EVENT_STATUS_COMPLETED = 'completed'
 
 EVENT_STATUS_CHOICES = [
-    (EVENT_STATUS_DRAFT, 'Draft'),
     (EVENT_STATUS_PUBLISHED, 'Published'),
     (EVENT_STATUS_CANCELLED, 'Cancelled'),
     (EVENT_STATUS_COMPLETED, 'Completed'),
