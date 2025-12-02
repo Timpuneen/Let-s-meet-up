@@ -373,7 +373,7 @@ SPECTACULAR_SETTINGS = {
 
     # Schema generation
     'SCHEMA_PATH_PREFIX': r'/api/',
-    'SCHEMA_PATH_PREFIX_TRIM': True,
+    'SCHEMA_PATH_PREFIX_TRIM': False,
     'SWAGGER_UI_SETTINGS': {
         'deepLinking': True,
         'persistAuthorization': True,
