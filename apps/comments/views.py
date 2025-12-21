@@ -1,3 +1,5 @@
+from typing import Optional
+
 from rest_framework import status
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -23,15 +25,19 @@ from .serializers import (
 from .permissions import IsCommentOwnerOrAdminOrReadOnly
 
 
+DEFAULT_PAGE_SIZE: int = 20
+MAX_PAGE_SIZE: int = 100
+
+
 class CommentPagination(PageNumberPagination):
     """
     Pagination class for comments.
     
     Provides page-based pagination with customizable page size.
     """
-    page_size = 20
+    page_size = DEFAULT_PAGE_SIZE
     page_size_query_param = 'page_size'
-    max_page_size = 100
+    max_page_size = MAX_PAGE_SIZE
 
 
 class CommentViewSet(ViewSet):
@@ -51,12 +57,12 @@ class CommentViewSet(ViewSet):
     permission_classes = [IsAuthenticated, IsCommentOwnerOrAdminOrReadOnly]
     pagination_class = CommentPagination
     
-    def get_queryset(self) -> QuerySet:
+    def get_queryset(self) -> QuerySet[EventComment]:
         """
         Get the queryset of comments.
         
         Returns:
-            QuerySet: All non-deleted comments.
+            QuerySet: All non-deleted comments with related user, event, and parent objects.
         """
         return EventComment.objects.all().select_related('user', 'event', 'parent')
     
@@ -95,7 +101,7 @@ class CommentViewSet(ViewSet):
             ),
         ],
         responses={
-            200: OpenApiResponse(
+            status.HTTP_200_OK: OpenApiResponse(
                 response=CommentListSerializer(many=True),
                 description='Paginated list of comments'
             ),
@@ -112,21 +118,21 @@ class CommentViewSet(ViewSet):
             page_size (int): Number of items per page.
         
         Returns:
-            Response: Paginated list of comments (200).
+            Response: Paginated list of comments with HTTP 200 status.
         """
         queryset = self.get_queryset()
         
-        event_id = request.query_params.get('event')
+        event_id: Optional[str] = request.query_params.get('event')
         if event_id:
             queryset = queryset.filter(event_id=event_id)
         
-        user_id = request.query_params.get('user')
+        user_id: Optional[str] = request.query_params.get('user')
         if user_id:
             queryset = queryset.filter(user_id=user_id)
         
         queryset = queryset.order_by('created_at')
         
-        paginator = self.pagination_class()
+        paginator: CommentPagination = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request)
         
         if page is not None:
@@ -141,8 +147,13 @@ class CommentViewSet(ViewSet):
         summary='Get comment details',
         description='Returns detailed information about a specific comment.',
         responses={
-            200: OpenApiResponse(response=CommentSerializer, description='Comment details'),
-            404: OpenApiResponse(description='Comment not found'),
+            status.HTTP_200_OK: OpenApiResponse(
+                response=CommentSerializer,
+                description='Comment details'
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description='Comment not found'
+            ),
         },
     )
     def retrieve(self, request: Request, pk: int) -> Response:
@@ -150,12 +161,13 @@ class CommentViewSet(ViewSet):
         Retrieve comment details.
         
         Args:
+            request: The HTTP request object.
             pk: Comment ID.
         
         Returns:
-            Response: Comment details (200) or not found (404).
+            Response: Comment details with HTTP 200 status or HTTP 404 if not found.
         """
-        comment = get_object_or_404(self.get_queryset(), pk=pk)
+        comment: EventComment = get_object_or_404(self.get_queryset(), pk=pk)
         serializer = CommentSerializer(comment)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -165,9 +177,16 @@ class CommentViewSet(ViewSet):
         description='Create a new comment on an event. The authenticated user is automatically set as the comment author.',
         request=CommentCreateSerializer,
         responses={
-            201: OpenApiResponse(response=CommentSerializer, description='Comment created successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
+            status.HTTP_201_CREATED: OpenApiResponse(
+                response=CommentSerializer,
+                description='Comment created successfully'
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description='Invalid input data'
+            ),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
+                description='Authentication required'
+            ),
         },
     )
     def create(self, request: Request) -> Response:
@@ -176,13 +195,16 @@ class CommentViewSet(ViewSet):
         
         The authenticated user is automatically set as the comment author.
         
+        Args:
+            request: The HTTP request object containing comment data.
+        
         Returns:
-            Response: Created comment data (201) or validation errors (400).
+            Response: Created comment data with HTTP 201 status or validation errors with HTTP 400 status.
         """
         serializer = CommentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        comment = serializer.save(user=request.user)
+        comment: EventComment = serializer.save(user=request.user)
         
         response_serializer = CommentSerializer(comment)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -193,11 +215,22 @@ class CommentViewSet(ViewSet):
         description='Update comment content. Only the comment owner or admin can update.',
         request=CommentUpdateSerializer,
         responses={
-            200: OpenApiResponse(response=CommentSerializer, description='Comment updated successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied'),
-            404: OpenApiResponse(description='Comment not found'),
+            status.HTTP_200_OK: OpenApiResponse(
+                response=CommentSerializer,
+                description='Comment updated successfully'
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description='Invalid input data'
+            ),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
+                description='Authentication required'
+            ),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                description='Permission denied'
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description='Comment not found'
+            ),
         },
     )
     def update(self, request: Request, pk: int) -> Response:
@@ -207,16 +240,17 @@ class CommentViewSet(ViewSet):
         Only the comment owner or admin can perform this action.
         
         Args:
+            request: The HTTP request object containing updated data.
             pk: Comment ID.
         
         Returns:
-            Response: Updated comment data (200) or errors.
+            Response: Updated comment data with HTTP 200 status or appropriate error response.
         """
-        comment = get_object_or_404(self.get_queryset(), pk=pk)
+        comment: EventComment = get_object_or_404(self.get_queryset(), pk=pk)
         
         self.check_object_permissions(request, comment)
         
-        partial = request.method == 'PATCH'
+        partial: bool = request.method == 'PATCH'
         serializer = CommentUpdateSerializer(
             comment,
             data=request.data,
@@ -234,11 +268,22 @@ class CommentViewSet(ViewSet):
         description='Partially update comment content. Only the comment owner or admin can update.',
         request=CommentUpdateSerializer,
         responses={
-            200: OpenApiResponse(response=CommentSerializer, description='Comment updated successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied'),
-            404: OpenApiResponse(description='Comment not found'),
+            status.HTTP_200_OK: OpenApiResponse(
+                response=CommentSerializer,
+                description='Comment updated successfully'
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description='Invalid input data'
+            ),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
+                description='Authentication required'
+            ),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                description='Permission denied'
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description='Comment not found'
+            ),
         },
     )
     def partial_update(self, request: Request, pk: int) -> Response:
@@ -248,10 +293,11 @@ class CommentViewSet(ViewSet):
         Only the comment owner or admin can perform this action.
         
         Args:
+            request: The HTTP request object containing partial update data.
             pk: Comment ID.
         
         Returns:
-            Response: Updated comment data (200) or errors.
+            Response: Updated comment data with HTTP 200 status or appropriate error response.
         """
         return self.update(request, pk=pk)
     
@@ -260,10 +306,18 @@ class CommentViewSet(ViewSet):
         summary='Delete comment',
         description='Soft delete a comment. Only the comment owner or admin can delete.',
         responses={
-            204: OpenApiResponse(description='Comment deleted successfully'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied'),
-            404: OpenApiResponse(description='Comment not found'),
+            status.HTTP_204_NO_CONTENT: OpenApiResponse(
+                description='Comment deleted successfully'
+            ),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
+                description='Authentication required'
+            ),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                description='Permission denied'
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description='Comment not found'
+            ),
         },
     )
     def destroy(self, request: Request, pk: int) -> Response:
@@ -273,12 +327,13 @@ class CommentViewSet(ViewSet):
         Only the comment owner or admin can perform this action.
         
         Args:
+            request: The HTTP request object.
             pk: Comment ID.
         
         Returns:
-            Response: No content (204) or errors.
+            Response: HTTP 204 No Content status on success or appropriate error response.
         """
-        comment = get_object_or_404(self.get_queryset(), pk=pk)
+        comment: EventComment = get_object_or_404(self.get_queryset(), pk=pk)
         
         self.check_object_permissions(request, comment)
         
@@ -290,11 +345,13 @@ class CommentViewSet(ViewSet):
         summary='Get nested replies',
         description='Returns all nested replies to a specific comment in a tree structure.',
         responses={
-            200: OpenApiResponse(
+            status.HTTP_200_OK: OpenApiResponse(
                 response=NestedReplySerializer(many=True),
                 description='Nested replies tree'
             ),
-            404: OpenApiResponse(description='Comment not found'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description='Comment not found'
+            ),
         },
     )
     @action(detail=True, methods=['get'], url_path='replies')
@@ -305,15 +362,15 @@ class CommentViewSet(ViewSet):
         Returns replies in a tree structure with all nested levels.
         
         Args:
+            request: The HTTP request object.
             pk: Comment ID.
         
         Returns:
-            Response: Nested replies tree (200) or not found (404).
+            Response: Nested replies tree with HTTP 200 status or HTTP 404 if comment not found.
         """
-        comment = get_object_or_404(self.get_queryset(), pk=pk)
+        comment: EventComment = get_object_or_404(self.get_queryset(), pk=pk)
         
-        replies = comment.replies.all().order_by('created_at')
+        replies: QuerySet[EventComment] = comment.replies.all().order_by('created_at')
         serializer = NestedReplySerializer(replies, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
-

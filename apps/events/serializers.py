@@ -1,20 +1,22 @@
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from django.utils import timezone
-
 from rest_framework.serializers import (
     ModelSerializer,
-    SerializerMethodField,
     PrimaryKeyRelatedField,
+    SerializerMethodField,
     ValidationError,
 )
 
+from apps.categories.models import Category
 from apps.categories.serializers import CategorySerializer
 from apps.users.serializers import UserSerializer
-from apps.categories.models import Category
 
 from .models import Event
+
+
+MIN_PARTICIPANTS_COUNT = 1
 
 
 class EventSerializer(ModelSerializer):
@@ -37,7 +39,7 @@ class EventSerializer(ModelSerializer):
     class Meta:
         model = Event
         fields = [
-            'id', 'title', 'description', 'address','categories', 'date', 'status',
+            'id', 'title', 'description', 'address', 'categories', 'date', 'status',
             'invitation_perm', 'max_participants', 'organizer',
             'country', 'country_name', 'city', 'city_name',
             'category_names', 'participants_count', 'is_full',
@@ -46,7 +48,8 @@ class EventSerializer(ModelSerializer):
         read_only_fields = ['id', 'organizer', 'created_at', 'updated_at']
     
     def get_country_name(self, obj: Event) -> Optional[str]:
-        """Get country name for the event.
+        """
+        Get country name for the event.
         
         Args:
             obj: Event instance.
@@ -57,7 +60,8 @@ class EventSerializer(ModelSerializer):
         return obj.country.name if obj.country else None
     
     def get_city_name(self, obj: Event) -> Optional[str]:
-        """Get city name for the event.
+        """
+        Get city name for the event.
         
         Args:
             obj: Event instance.
@@ -68,7 +72,8 @@ class EventSerializer(ModelSerializer):
         return obj.city.name if obj.city else None
     
     def get_category_names(self, obj: Event) -> List[str]:
-        """Get list of category names for the event.
+        """
+        Get list of category names for the event.
         
         Args:
             obj: Event instance.
@@ -79,7 +84,8 @@ class EventSerializer(ModelSerializer):
         return [category.name for category in obj.categories.all()]
 
     def get_participants_count(self, obj: Event) -> int:
-        """Return the number of accepted participants for the event.
+        """
+        Return the number of accepted participants for the event.
         
         Args:
             obj: Event instance.
@@ -90,7 +96,8 @@ class EventSerializer(ModelSerializer):
         return obj.get_participants_count()
 
     def get_is_full(self, obj: Event) -> bool:
-        """Check if the event has reached maximum capacity.
+        """
+        Check if the event has reached maximum capacity.
         
         Args:
             obj: Event instance.
@@ -117,15 +124,14 @@ class EventListSerializer(ModelSerializer):
     class Meta:
         model = Event
         fields = [
-            'id', 'title', 'description', 'date','categories', 'address',
+            'id', 'title', 'description', 'date', 'categories', 'address',
             'city_name', 'status', 'organizer', 'participants_count',
             'max_participants'
         ]
-
-    
     
     def get_city_name(self, obj: Event) -> Optional[str]:
-        """Get city name for the event.
+        """
+        Get city name for the event.
         
         Args:
             obj: Event instance.
@@ -136,7 +142,8 @@ class EventListSerializer(ModelSerializer):
         return obj.city.name if obj.city else None
 
     def get_participants_count(self, obj: Event) -> int:
-        """Return the number of accepted participants for the event.
+        """
+        Return the number of accepted participants for the event.
         
         Args:
             obj: Event instance.
@@ -174,7 +181,8 @@ class EventCreateSerializer(ModelSerializer):
         ]
 
     def validate_date(self, value: datetime) -> datetime:
-        """Validate that the event date is in the future.
+        """
+        Validate that the event date is in the future.
         
         Args:
             value: The date value to validate.
@@ -190,7 +198,8 @@ class EventCreateSerializer(ModelSerializer):
         return value
     
     def validate_max_participants(self, value: Optional[int]) -> Optional[int]:
-        """Validate that max participants is positive.
+        """
+        Validate that max participants is positive.
         
         Args:
             value: The max_participants value to validate.
@@ -201,12 +210,13 @@ class EventCreateSerializer(ModelSerializer):
         Raises:
             ValidationError: If value is not positive.
         """
-        if value is not None and value < 1:
-            raise ValidationError('Maximum participants must be at least 1')
+        if value is not None and value < MIN_PARTICIPANTS_COUNT:
+            raise ValidationError(f'Maximum participants must be at least {MIN_PARTICIPANTS_COUNT}')
         return value
     
     def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate city belongs to country if both provided.
+        """
+        Validate city belongs to country if both provided.
         
         Args:
             data: Dictionary containing all validated field data.
@@ -228,7 +238,8 @@ class EventCreateSerializer(ModelSerializer):
         return data
     
     def create(self, validated_data: Dict[str, Any]) -> Event:
-        """Create a new event with categories.
+        """
+        Create a new event with categories.
         
         Args:
             validated_data: Dictionary containing validated event data.
@@ -270,7 +281,8 @@ class EventUpdateSerializer(ModelSerializer):
         ]
 
     def validate_date(self, value: datetime) -> datetime:
-        """Validate that the event date is in the future.
+        """
+        Validate that the event date is in the future.
         
         Args:
             value: The date value to validate.
@@ -286,7 +298,8 @@ class EventUpdateSerializer(ModelSerializer):
         return value
     
     def validate_max_participants(self, value: Optional[int]) -> Optional[int]:
-        """Validate that max participants is positive and not less than current count.
+        """
+        Validate that max participants is positive and not less than current count.
         
         Args:
             value: The max_participants value to validate.
@@ -298,8 +311,8 @@ class EventUpdateSerializer(ModelSerializer):
             ValidationError: If value is invalid.
         """
         if value is not None:
-            if value < 1:
-                raise ValidationError('Maximum participants must be at least 1')
+            if value < MIN_PARTICIPANTS_COUNT:
+                raise ValidationError(f'Maximum participants must be at least {MIN_PARTICIPANTS_COUNT}')
             
             instance = self.instance
             if instance:
@@ -313,7 +326,8 @@ class EventUpdateSerializer(ModelSerializer):
         return value
     
     def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate city belongs to country if both provided.
+        """
+        Validate city belongs to country if both provided.
         
         Args:
             data: Dictionary containing all validated field data.
@@ -338,7 +352,8 @@ class EventUpdateSerializer(ModelSerializer):
         return data
     
     def update(self, instance: Event, validated_data: Dict[str, Any]) -> Event:
-        """Update an event with new data including categories.
+        """
+        Update an event with new data including categories.
         
         Args:
             instance: Existing event instance.

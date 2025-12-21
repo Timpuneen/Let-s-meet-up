@@ -1,6 +1,7 @@
-from typing import List, Any
+from typing import List, Any, Type
+from django.db.models.query import QuerySet
 
-from rest_framework import status
+from rest_framework.status import HTTP_201_CREATED, HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -17,6 +18,10 @@ from .serializers import (
     AuthTokenSerializer,
 )
 
+ACTION_SIGNUP = "signup"
+ACTION_LOGIN = "login"
+AUTH_TAGS = ["Authentication"]
+
 
 class AuthViewSet(ViewSet):
     """
@@ -25,8 +30,8 @@ class AuthViewSet(ViewSet):
     Provides endpoints for user registration, login, and profile retrieval.
     """
 
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
+    serializer_class: Type[UserSerializer] = UserSerializer
+    queryset: QuerySet[User] = User.objects.all()
 
     def get_permissions(self) -> List[BasePermission]:
         """
@@ -35,21 +40,21 @@ class AuthViewSet(ViewSet):
         Returns:
             list: Permission classes based on the action.
         """
-        if self.action in ["signup", "login"]:
-            permission_classes = [AllowAny]
+        if self.action in {ACTION_SIGNUP, ACTION_LOGIN}:
+            permission_classes: List[Type[BasePermission]] = [AllowAny]
         else:
-            permission_classes = [IsAuthenticated]
+            permission_classes: List[Type[BasePermission]] = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
     @extend_schema(
         tags=["Authentication"],
         request=UserRegistrationSerializer,
         responses={
-            201: OpenApiResponse(
+            HTTP_201_CREATED: OpenApiResponse(
                 response=AuthTokenSerializer,
                 description="User successfully created with JWT tokens",
             ),
-            400: OpenApiResponse(description="Invalid input data"),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(description="Invalid input data"),
         },
         summary="Register new user",
         description="Create a new user account with email, name, and password. Returns user data and JWT tokens.",
@@ -74,17 +79,17 @@ class AuthViewSet(ViewSet):
         response_data = {"user": user}
         token_serializer = AuthTokenSerializer(response_data)
 
-        return Response(token_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(token_serializer.data, status=HTTP_201_CREATED)
 
     @extend_schema(
         tags=["Authentication"],
         request=LoginSerializer,
         responses={
-            200: OpenApiResponse(
+            HTTP_200_OK: OpenApiResponse(
                 response=AuthTokenSerializer,
                 description="Successfully authenticated with JWT tokens",
             ),
-            400: OpenApiResponse(description="Invalid credentials"),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(description="Invalid credentials"),
         },
         summary="User login",
         description="Authenticate with email and password. Returns user data and JWT tokens.",
@@ -109,15 +114,15 @@ class AuthViewSet(ViewSet):
         response_data = {"user": user}
         token_serializer = AuthTokenSerializer(response_data)
 
-        return Response(token_serializer.data, status=status.HTTP_200_OK)
+        return Response(token_serializer.data, status=HTTP_200_OK)
 
     @extend_schema(
         tags=["Authentication"],
         responses={
-            200: OpenApiResponse(
+            HTTP_200_OK: OpenApiResponse(
                 response=UserSerializer, description="Current user information"
             ),
-            401: OpenApiResponse(description="Not authenticated"),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Not authenticated"),
         },
         summary="Get current user",
         description="Retrieve the profile of the currently authenticated user.",
@@ -137,7 +142,7 @@ class AuthViewSet(ViewSet):
             Response: Current user data (200) or unauthorized (401).
         """
         serializer = UserSerializer(request.user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=HTTP_200_OK)
 
 
 class CustomTokenRefreshView(TokenRefreshView):
@@ -150,8 +155,8 @@ class CustomTokenRefreshView(TokenRefreshView):
     @extend_schema(
         tags=["Authentication"],
         responses={
-            200: OpenApiResponse(description="New access token generated"),
-            401: OpenApiResponse(description="Invalid or expired refresh token"),
+            HTTP_200_OK: OpenApiResponse(description="New access token generated"),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description="Invalid or expired refresh token"),
         },
         summary="Refresh access token",
         description="Generate a new access token using a valid refresh token.",

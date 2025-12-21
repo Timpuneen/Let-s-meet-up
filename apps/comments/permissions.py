@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -29,10 +29,7 @@ class IsCommentOwnerOrAdminOrReadOnly(BasePermission):
         Returns:
             bool: True if the user has permission, False otherwise.
         """
-        if request.method in SAFE_METHODS:
-            return request.user and request.user.is_authenticated
-        
-        return request.user and request.user.is_authenticated
+        return bool(request.user and request.user.is_authenticated)
     
     def has_object_permission(self, request: Request, view: APIView, obj: EventComment) -> bool:
         """
@@ -50,4 +47,3 @@ class IsCommentOwnerOrAdminOrReadOnly(BasePermission):
             return True
         
         return obj.user == request.user or request.user.is_staff
-

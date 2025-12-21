@@ -1,14 +1,24 @@
+from typing import Any, Dict
+
 from rest_framework.serializers import (
+    CharField,
     ModelSerializer,
     SerializerMethodField,
     ValidationError,
-    CharField,
 )
 
-from apps.users.serializers import UserSerializer
 from apps.events.serializers import EventListSerializer
+from apps.participants.models import EventParticipant
+from apps.users.models import User
+from apps.users.serializers import UserSerializer
 
-from .models import EventInvitation, INVITATION_STATUS_PENDING
+from .models import INVITATION_STATUS_PENDING, EventInvitation
+
+
+INVITATION_ACTION_ACCEPT = 'accept'
+INVITATION_ACTION_REJECT = 'reject'
+
+VALID_INVITATION_ACTIONS = [INVITATION_ACTION_ACCEPT, INVITATION_ACTION_REJECT]
 
 
 class EventInvitationSerializer(ModelSerializer):
@@ -53,8 +63,9 @@ class EventInvitationListSerializer(ModelSerializer):
             'status', 'created_at'
         ]
     
-    def get_event_title(self, obj):
-        """Get event title.
+    def get_event_title(self, obj: EventInvitation) -> str:
+        """
+        Get event title.
         
         Args:
             obj: EventInvitation instance.
@@ -64,8 +75,9 @@ class EventInvitationListSerializer(ModelSerializer):
         """
         return obj.event.title
     
-    def get_invited_user_name(self, obj):
-        """Get invited user name.
+    def get_invited_user_name(self, obj: EventInvitation) -> str:
+        """
+        Get invited user name.
         
         Args:
             obj: EventInvitation instance.
@@ -75,8 +87,9 @@ class EventInvitationListSerializer(ModelSerializer):
         """
         return obj.invited_user.name
     
-    def get_invited_by_name(self, obj):
-        """Get inviter name.
+    def get_invited_by_name(self, obj: EventInvitation) -> str:
+        """
+        Get inviter name.
         
         Args:
             obj: EventInvitation instance.
@@ -106,7 +119,7 @@ class EventInvitationCreateSerializer(ModelSerializer):
         model = EventInvitation
         fields = ['event', 'invited_user_email']
 
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate invitation creation.
         
@@ -119,8 +132,6 @@ class EventInvitationCreateSerializer(ModelSerializer):
         Raises:
             ValidationError: If validation fails.
         """
-        from apps.users.models import User
-        
         request = self.context.get('request')
         event = data.get('event')
         invited_user_email = data.get('invited_user_email')
@@ -145,7 +156,6 @@ class EventInvitationCreateSerializer(ModelSerializer):
                 'invited_user_email': 'Cannot invite the event organizer'
             })
         
-        from apps.participants.models import EventParticipant
         if EventParticipant.objects.filter(event=event, user=invited_user).exists():
             raise ValidationError({
                 'invited_user_email': 'User is already a participant of this event'
@@ -167,7 +177,7 @@ class EventInvitationCreateSerializer(ModelSerializer):
         
         return data
     
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> EventInvitation:
         """
         Create a new invitation.
         
@@ -198,7 +208,7 @@ class EventInvitationResponseSerializer(ModelSerializer):
         model = EventInvitation
         fields = ['action']
 
-    def validate_action(self, value):
+    def validate_action(self, value: str) -> str:
         """
         Validate action value.
         
@@ -211,11 +221,13 @@ class EventInvitationResponseSerializer(ModelSerializer):
         Raises:
             ValidationError: If action is invalid.
         """
-        if value not in ['accept', 'reject']:
-            raise ValidationError('Action must be "accept" or "reject"')
+        if value not in VALID_INVITATION_ACTIONS:
+            raise ValidationError(
+                f'Action must be one of: {", ".join(VALID_INVITATION_ACTIONS)}'
+            )
         return value
     
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate invitation response.
         
@@ -235,12 +247,12 @@ class EventInvitationResponseSerializer(ModelSerializer):
                 f'Cannot respond to invitation with status: {invitation.status}'
             )
         
-        if data['action'] == 'accept' and invitation.event.is_full():
+        if data['action'] == INVITATION_ACTION_ACCEPT and invitation.event.is_full():
             raise ValidationError('Event has reached maximum capacity')
         
         return data
     
-    def update(self, instance, validated_data):
+    def update(self, instance: EventInvitation, validated_data: Dict[str, Any]) -> EventInvitation:
         """
         Update invitation status based on action.
         
@@ -253,9 +265,9 @@ class EventInvitationResponseSerializer(ModelSerializer):
         """
         action = validated_data.get('action')
         
-        if action == 'accept':
+        if action == INVITATION_ACTION_ACCEPT:
             instance.accept()
-        elif action == 'reject':
+        elif action == INVITATION_ACTION_REJECT:
             instance.reject()
         
         return instance

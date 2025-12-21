@@ -1,5 +1,7 @@
+from typing import Any
+
 from django.conf import settings
-from django.db import models
+from django.db.models import ForeignKey, CharField, BooleanField, Index, CASCADE
 from django.core.exceptions import ValidationError
 
 from apps.abstracts.models import AbstractTimestampedModel
@@ -12,6 +14,7 @@ PARTICIPANT_STATUS_CHOICES = [
 
 PARTICIPANT_STATUS_MAX_LENGTH = 20
 
+ADMIN_UPDATE_FIELDS = ['is_admin', 'updated_at']
 
 class EventParticipant(AbstractTimestampedModel):
     """
@@ -29,28 +32,31 @@ class EventParticipant(AbstractTimestampedModel):
         updated_at (datetime): When participation was last updated (from AbstractTimestampedModel).
     """
     
-    event = models.ForeignKey(
+    event: 'Event' = ForeignKey(
         'events.Event',
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='participants_rel',
         verbose_name='Event',
         help_text='Event being participated in',
     )
-    user = models.ForeignKey(
+
+    user: 'User' = ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='event_participations',
         verbose_name='User',
         help_text='Participating user',
     )
-    status = models.CharField(
+
+    status: CharField = CharField(
         max_length=PARTICIPANT_STATUS_MAX_LENGTH,
         choices=PARTICIPANT_STATUS_CHOICES,
         default=PARTICIPANT_STATUS_ACCEPTED,
         verbose_name='Status',
         help_text='Current status of the participation (always accepted)',
     )
-    is_admin = models.BooleanField(
+
+    is_admin: BooleanField = BooleanField(
         default=False,
         verbose_name='Is Admin',
         help_text='Whether this user has admin privileges for the event',
@@ -63,9 +69,9 @@ class EventParticipant(AbstractTimestampedModel):
         ordering = ['-created_at']
         unique_together = [['event', 'user']]
         indexes = [
-            models.Index(fields=['event', 'status']),
-            models.Index(fields=['user', 'status']),
-            models.Index(fields=['status']),
+            Index(fields=['event', 'status']),
+            Index(fields=['user', 'status']),
+            Index(fields=['status']),
         ]
     
     def __str__(self) -> str:
@@ -110,14 +116,8 @@ class EventParticipant(AbstractTimestampedModel):
         if self.pk is None and self.event.is_full():
             raise ValidationError('Event has reached maximum capacity')
     
-    def save(self, *args, **kwargs) -> None:
-        """
-        Save the participant instance after validation.
-        
-        Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-        """
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Save the participant instance after validation and enforce accepted status."""
         self.status = PARTICIPANT_STATUS_ACCEPTED
         self.full_clean()
         super().save(*args, **kwargs)
@@ -127,11 +127,11 @@ class EventParticipant(AbstractTimestampedModel):
         Grant admin privileges to this participant.
         """
         self.is_admin = True
-        self.save(update_fields=['is_admin', 'updated_at'])
+        self.save(update_fields=ADMIN_UPDATE_FIELDS)
     
     def remove_admin(self) -> None:
         """
         Remove admin privileges from this participant.
         """
         self.is_admin = False
-        self.save(update_fields=['is_admin', 'updated_at'])
+        self.save(update_fields=ADMIN_UPDATE_FIELDS)

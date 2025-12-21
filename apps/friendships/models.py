@@ -1,9 +1,14 @@
+from typing import Any
+
 from django.conf import settings
-from django.db import models
 from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import Q, QuerySet
 
 from apps.abstracts.models import AbstractTimestampedModel
 
+
+FRIENDSHIP_STATUS_MAX_LENGTH = 20
 
 FRIENDSHIP_STATUS_PENDING = 'pending'
 FRIENDSHIP_STATUS_ACCEPTED = 'accepted'
@@ -46,7 +51,7 @@ class Friendship(AbstractTimestampedModel):
         help_text='User who received the friendship request',
     )
     status = models.CharField(
-        max_length=20,
+        max_length=FRIENDSHIP_STATUS_MAX_LENGTH,
         choices=FRIENDSHIP_STATUS_CHOICES,
         default=FRIENDSHIP_STATUS_PENDING,
         verbose_name='Status',
@@ -108,7 +113,7 @@ class Friendship(AbstractTimestampedModel):
                     'A friendship request already exists in the opposite direction'
                 )
     
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """
         Save the friendship instance after validation.
         
@@ -138,7 +143,7 @@ class Friendship(AbstractTimestampedModel):
         self.save(update_fields=['status', 'updated_at'])
     
     @classmethod
-    def are_friends(cls, user1, user2) -> bool:
+    def are_friends(cls, user1: Any, user2: Any) -> bool:
         """
         Check if two users are friends.
         
@@ -150,12 +155,12 @@ class Friendship(AbstractTimestampedModel):
             bool: True if users are friends, False otherwise.
         """
         return cls.objects.filter(
-            models.Q(sender=user1, receiver=user2) | models.Q(sender=user2, receiver=user1),
+            Q(sender=user1, receiver=user2) | Q(sender=user2, receiver=user1),
             status=FRIENDSHIP_STATUS_ACCEPTED
         ).exists()
     
     @classmethod
-    def get_friends(cls, user):
+    def get_friends(cls, user: Any) -> QuerySet:
         """
         Get all friends of a user.
         
@@ -165,10 +170,10 @@ class Friendship(AbstractTimestampedModel):
         Returns:
             QuerySet: User objects who are friends with the given user.
         """
-        from users.models import User
+        from apps.users.models import User
         
         friendships = cls.objects.filter(
-            models.Q(sender=user) | models.Q(receiver=user),
+            Q(sender=user) | Q(receiver=user),
             status=FRIENDSHIP_STATUS_ACCEPTED
         )
         

@@ -1,33 +1,34 @@
-from typing import List
+from typing import List, Optional
 
-from rest_framework import status
-from rest_framework.viewsets import ViewSet
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.request import Request
-from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission
-
-from django.utils import timezone
 from django.db.models import Prefetch, QuerySet
 from django.shortcuts import get_object_or_404
-
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet
 
-from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
 from apps.comments.models import EventComment
 from apps.comments.serializers import CommentListSerializer
 from apps.media.models import EventPhoto
 from apps.media.serializers import PhotoListSerializer
+from apps.participants.models import PARTICIPANT_STATUS_ACCEPTED, EventParticipant
 
-from .models import Event, EVENT_STATUS_PUBLISHED
-from .serializers import (
-    EventSerializer,
-    EventCreateSerializer,
-    EventUpdateSerializer,
-    EventListSerializer
-)
+from .models import EVENT_STATUS_PUBLISHED, Event
 from .permissions import IsOrganizerOrReadOnly
+from .serializers import (
+    EventCreateSerializer,
+    EventListSerializer,
+    EventSerializer,
+    EventUpdateSerializer,
+)
+
+
+HTTP_METHOD_PATCH = 'PATCH'
 
 
 class EventViewSet(ViewSet):
@@ -96,6 +97,9 @@ class EventViewSet(ViewSet):
         """
         List all published upcoming events.
         
+        Args:
+            request: The request object.
+        
         Returns:
             Response: List of events (200).
         """
@@ -126,6 +130,7 @@ class EventViewSet(ViewSet):
         Retrieve event details.
         
         Args:
+            request: The request object.
             pk: Event ID.
         
         Returns:
@@ -149,6 +154,9 @@ class EventViewSet(ViewSet):
     def create(self, request: Request) -> Response:
         """
         Create a new event.
+        
+        Args:
+            request: The request object.
         
         Returns:
             Response: Created event data (201) or validation errors (400).
@@ -178,6 +186,7 @@ class EventViewSet(ViewSet):
         Update an event.
         
         Args:
+            request: The request object.
             pk: Event ID.
         
         Returns:
@@ -191,7 +200,7 @@ class EventViewSet(ViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        partial = request.method == 'PATCH'
+        partial = request.method == HTTP_METHOD_PATCH
         serializer = EventUpdateSerializer(
             event, 
             data=request.data, 
@@ -221,6 +230,7 @@ class EventViewSet(ViewSet):
         Partially update an event.
         
         Args:
+            request: The request object.
             pk: Event ID.
         
         Returns:
@@ -244,6 +254,7 @@ class EventViewSet(ViewSet):
         Soft delete an event.
         
         Args:
+            request: The request object.
             pk: Event ID.
         
         Returns:
@@ -276,6 +287,13 @@ class EventViewSet(ViewSet):
     def register(self, request: Request, pk: int) -> Response:
         """
         Register current user for the event.
+        
+        Args:
+            request: The request object.
+            pk: Event ID.
+        
+        Returns:
+            Response: Success message (201) or error (400).
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         user = request.user
@@ -324,6 +342,13 @@ class EventViewSet(ViewSet):
     def unregister(self, request: Request, pk: int) -> Response:
         """
         Cancel registration for the event.
+        
+        Args:
+            request: The request object.
+            pk: Event ID.
+        
+        Returns:
+            Response: Success message (200) or error (400).
         """
         event = get_object_or_404(Event.objects.all(), pk=pk)
         user = request.user
@@ -356,6 +381,12 @@ class EventViewSet(ViewSet):
     def my_organized(self, request: Request) -> Response:
         """
         List events organized by the current user.
+        
+        Args:
+            request: The request object.
+        
+        Returns:
+            Response: List of organized events (200).
         """
         events = self._get_base_queryset().filter(organizer=request.user)
         serializer = EventListSerializer(events, many=True)
@@ -380,6 +411,12 @@ class EventViewSet(ViewSet):
     def my_registered(self, request: Request) -> Response:
         """
         List events the current user is registered for.
+        
+        Args:
+            request: The request object.
+        
+        Returns:
+            Response: List of registered events (200).
         """
         event_ids = EventParticipant.objects.filter(
             user=request.user,
@@ -419,7 +456,7 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
-    def comments(self, request, pk=None):
+    def comments(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Get all comments for a specific event.
         
@@ -427,6 +464,7 @@ class EventViewSet(ViewSet):
         Supports pagination through page_size query parameter.
         
         Args:
+            request: The request object.
             pk: Event ID.
         
         Returns:
@@ -470,7 +508,7 @@ class EventViewSet(ViewSet):
         },
     )
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
-    def photos(self, request, pk=None):
+    def photos(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Get all photos for a specific event.
         
@@ -479,6 +517,7 @@ class EventViewSet(ViewSet):
         Supports pagination through page_size query parameter.
         
         Args:
+            request: The request object.
             pk: Event ID.
         
         Returns:

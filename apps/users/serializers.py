@@ -1,7 +1,6 @@
 from typing import Dict, Any
-
 from django.contrib.auth import authenticate
-
+from .models import User, MAX_NAME_LENGTH, INVITATION_PRIVACY_MAX_LENGTH, MAX_EMAIL_LENGTH
 from rest_framework.serializers import (
     Serializer,
     CharField,
@@ -12,8 +11,9 @@ from rest_framework.serializers import (
     ValidationError,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .models import User
+
+PASSWORD_MIN_LENGTH = 6
 
 class UserSerializer(Serializer):
     """Serializer for User model.
@@ -22,11 +22,11 @@ class UserSerializer(Serializer):
     Used in nested serializers for events and other resources.
     """
 
-    id = IntegerField(read_only=True)
-    email = EmailField(read_only=True)
-    name = CharField(read_only=True, max_length=255)
-    created_at = DateTimeField(read_only=True)
-    invitation_privacy = CharField(read_only=True, max_length=20)
+    id: IntegerField = IntegerField(read_only=True)
+    email: EmailField = EmailField(read_only=True)
+    name: CharField = CharField(read_only=True, max_length=MAX_NAME_LENGTH)
+    created_at: DateTimeField = DateTimeField(read_only=True)
+    invitation_privacy: CharField = CharField(read_only=True, max_length=INVITATION_PRIVACY_MAX_LENGTH)
 
 
 class UserRegistrationSerializer(Serializer):
@@ -36,19 +36,19 @@ class UserRegistrationSerializer(Serializer):
     Requires minimum password length of 6 characters and password confirmation.
     """
 
-    email = EmailField(required=True, help_text="User email address")
-    name = CharField(required=True, max_length=255, help_text="User display name")
-    password = CharField(
+    email: EmailField = EmailField(required=True, help_text="User email address")
+    name: CharField = CharField(required=True, max_length=MAX_NAME_LENGTH, help_text="User display name")
+    password: CharField = CharField(
         write_only=True,
         required=True,
-        min_length=6,
+        min_length=PASSWORD_MIN_LENGTH,
         style={"input_type": "password"},
-        help_text="Password must be at least 6 characters long",
+        help_text=f"Password must be at least {PASSWORD_MIN_LENGTH} characters long",
     )
-    password_confirm = CharField(
+    password_confirm: CharField = CharField(
         write_only=True,
         required=True,
-        min_length=6,
+        min_length=PASSWORD_MIN_LENGTH,
         style={"input_type": "password"},
         help_text="Confirm your password",
     )
@@ -110,8 +110,8 @@ class LoginSerializer(Serializer):
     Validates user credentials and ensures the account is active.
     """
 
-    email = EmailField(help_text="User email address")
-    password = CharField(
+    email: EmailField = EmailField(help_text="User email address")
+    password: CharField = CharField(
         write_only=True, style={"input_type": "password"}, help_text="User password"
     )
 
@@ -166,8 +166,8 @@ class AuthTokenSerializer(Serializer):
     Returns user data along with JWT access and refresh tokens.
     """
 
-    user = UserSerializer(read_only=True)
-    tokens = SerializerMethodField()
+    user: UserSerializer = UserSerializer(read_only=True)
+    tokens: SerializerMethodField = SerializerMethodField()
 
     def get_tokens(self, obj: Dict[str, Any]) -> Dict[str, str]:
         """Generate JWT tokens for the user.

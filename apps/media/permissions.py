@@ -1,8 +1,13 @@
+from typing import Set
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from apps.media.models import EventPhoto
+
+UPDATE_METHODS: Set[str] = {"PUT", "PATCH"}
+DELETE_METHOD: str = "DELETE"
+CREATE_METHOD: str = "POST"
 
 
 class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
@@ -20,17 +25,8 @@ class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
     """
     
     def has_permission(self, request: Request, view: APIView) -> bool:
-        """
-        Check if the user has permission to perform the action.
-        
-        Args:
-            request: The HTTP request object.
-            view: The view being accessed.
-        
-        Returns:
-            bool: True if the user has permission, False otherwise.
-        """
-        return request.user and request.user.is_authenticated
+        """Return True if the request has an authenticated user."""
+        return bool(getattr(request, "user", None) and request.user.is_authenticated)
     
     def has_object_permission(self, request: Request, view: APIView, obj: EventPhoto) -> bool:
         """
@@ -47,10 +43,10 @@ class IsPhotoUploaderOrOrganizerOrAdmin(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         
-        if request.method in ['PUT', 'PATCH']:
+        if request.method in UPDATE_METHODS:
             return obj.uploaded_by == request.user
         
-        if request.method == 'DELETE':
+        if request.method == DELETE_METHOD:
             return (
                 obj.uploaded_by == request.user or
                 obj.event.organizer == request.user or

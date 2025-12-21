@@ -1,7 +1,10 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional
 
 from django.db import models
 from django.utils import timezone
+
+IS_DELETED_DEFAULT: bool = False
+SOFT_DELETE_RETURN_COUNT: int = 0
 
 
 class SoftDeletableManager(models.Manager):
@@ -12,9 +15,9 @@ class SoftDeletableManager(models.Manager):
     to include deleted objects in querysets.
     
     Examples:
-        Model.objects.all()   Only non-deleted objects
-        Model.objects.with_deleted()   All objects including deleted
-        Model.objects.deleted_only()   Only deleted objects
+        Model.objects.all()            # Only non-deleted objects
+        Model.objects.with_deleted()   # All objects including deleted
+        Model.objects.deleted_only()   # Only deleted objects
     """
     
     def get_queryset(self) -> models.QuerySet:
@@ -22,7 +25,7 @@ class SoftDeletableManager(models.Manager):
         Return only non-deleted records by default.
         
         Returns:
-            QuerySet: Filtered queryset excluding soft-deleted objects.
+            models.QuerySet: Filtered queryset excluding soft-deleted objects.
         """
         return super().get_queryset().filter(is_deleted=False)
     
@@ -31,7 +34,7 @@ class SoftDeletableManager(models.Manager):
         Return all records including soft-deleted ones.
         
         Returns:
-            QuerySet: Unfiltered queryset with all objects.
+            models.QuerySet: Unfiltered queryset with all objects.
         """
         return super().get_queryset()
     
@@ -40,7 +43,7 @@ class SoftDeletableManager(models.Manager):
         Return only soft-deleted records.
         
         Returns:
-            QuerySet: Filtered queryset with only deleted objects.
+            models.QuerySet: Filtered queryset with only deleted objects.
         """
         return super().get_queryset().filter(is_deleted=True)
 
@@ -58,11 +61,10 @@ class AbstractSoftDeletableModel(models.Model):
     
     Managers:
         objects: Returns only non-deleted objects.
-        all_objects: Returns all objects including deleted ones.
     """
     
     is_deleted = models.BooleanField(
-        default=False,
+        default=IS_DELETED_DEFAULT,
         db_index=True,
         verbose_name='Is Deleted',
         help_text='Indicates if this record has been soft-deleted',
@@ -81,39 +83,42 @@ class AbstractSoftDeletableModel(models.Model):
 
     def delete(
         self,
-        using: str | None = None,
+        using: Optional[str] = None,
     ) -> Tuple[int, Dict[str, int]]:
         """
         Soft delete the object by marking it as deleted.
         
+        Sets is_deleted to True and records the deletion timestamp.
+        Returns (0, {}) to maintain compatibility with Django's delete API.
+        
         Args:
             using: Database alias to use for the operation.
-            keep_parents: Ignored for soft delete operations.
         
         Returns:
-            Tuple containing (0, {}) to maintain compatibility with Django's delete.
+            Tuple[int, Dict[str, int]]: Tuple containing (0, {}) for compatibility.
         """
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.save(using=using, update_fields=['is_deleted', 'deleted_at'])
-        return (0, {})
+        return (SOFT_DELETE_RETURN_COUNT, {})
 
     def hard_delete(
         self,
-        using: str | None = None,
+        using: Optional[str] = None,
         keep_parents: bool = False
     ) -> Tuple[int, Dict[str, int]]:
         """
         Permanently delete the object from the database.
         
         This performs a real database deletion and cannot be undone.
+        Use with caution as this bypasses soft delete protection.
         
         Args:
             using: Database alias to use for the operation.
             keep_parents: Whether to keep parent model instances.
         
         Returns:
-            Tuple containing deletion count and dict of deleted objects by type.
+            Tuple[int, Dict[str, int]]: Deletion count and dict of deleted objects by type.
         """
         return super().delete(using=using, keep_parents=keep_parents)
 
@@ -123,6 +128,9 @@ class AbstractSoftDeletableModel(models.Model):
         
         Clears the is_deleted flag and deleted_at timestamp,
         making the object visible through the default manager again.
+        
+        Raises:
+            ValueError: If the object is not currently soft-deleted.
         """
         self.is_deleted = False
         self.deleted_at = None
@@ -131,13 +139,15 @@ class AbstractSoftDeletableModel(models.Model):
 
 class AbstractTimestampedModel(models.Model):
     """
-    Abstract base model that provides timestamp fields.
+    Abstract base model that provides automatic timestamp tracking.
     
     Automatically tracks when records are created and last updated.
+    The created_at field is set once on creation and never changes.
+    The updated_at field is automatically updated on every save.
     
     Attributes:
-        created_at (datetime): Timestamp when the record was created.
-        updated_at (datetime): Timestamp when the record was last updated.
+        created_at (datetime): Timestamp when the record was created (immutable).
+        updated_at (datetime): Timestamp when the record was last updated (auto-updated).
     """
     
     created_at = models.DateTimeField(

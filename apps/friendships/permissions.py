@@ -1,4 +1,18 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from typing import Any
+
+from rest_framework.permissions import SAFE_METHODS, BasePermission
+from rest_framework.request import Request
+from rest_framework.views import APIView
+
+
+HTTP_METHOD_DELETE = 'DELETE'
+HTTP_METHOD_PATCH = 'PATCH'
+HTTP_METHOD_PUT = 'PUT'
+HTTP_METHOD_POST = 'POST'
+
+WRITE_METHODS = [HTTP_METHOD_PATCH, HTTP_METHOD_PUT, HTTP_METHOD_POST]
+
+VIEW_ACTION_RESPOND = 'respond'
 
 
 class IsSenderOrReceiverOrReadOnly(BasePermission):
@@ -9,11 +23,20 @@ class IsSenderOrReceiverOrReadOnly(BasePermission):
     - Delete access for both sender and receiver
     """
     
-    def has_permission(self, request, view):
-        """Check if user is authenticated."""
-        return request.user and request.user.is_authenticated
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """
+        Check if user is authenticated.
+        
+        Args:
+            request: The request object.
+            view: The view object.
+            
+        Returns:
+            bool: True if user is authenticated, False otherwise.
+        """
+        return bool(request.user and request.user.is_authenticated)
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         """
         Check if user is involved in the friendship.
         
@@ -31,11 +54,11 @@ class IsSenderOrReceiverOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         
-        if request.method == 'DELETE':
+        if request.method == HTTP_METHOD_DELETE:
             return True
         
-        if request.method in ['PATCH', 'PUT', 'POST']:
-            if hasattr(view, 'action') and view.action == 'respond':
+        if request.method in WRITE_METHODS:
+            if hasattr(view, 'action') and view.action == VIEW_ACTION_RESPOND:
                 return request.user == obj.receiver
             
         return False
@@ -48,11 +71,20 @@ class IsReceiver(BasePermission):
     Used for accept/reject actions.
     """
     
-    def has_permission(self, request, view):
-        """Check if user is authenticated."""
-        return request.user and request.user.is_authenticated
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """
+        Check if user is authenticated.
+        
+        Args:
+            request: The request object.
+            view: The view object.
+            
+        Returns:
+            bool: True if user is authenticated, False otherwise.
+        """
+        return bool(request.user and request.user.is_authenticated)
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         """
         Check if user is the receiver.
         
@@ -74,11 +106,20 @@ class IsSender(BasePermission):
     Used for canceling pending requests.
     """
     
-    def has_permission(self, request, view):
-        """Check if user is authenticated."""
-        return request.user and request.user.is_authenticated
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """
+        Check if user is authenticated.
+        
+        Args:
+            request: The request object.
+            view: The view object.
+            
+        Returns:
+            bool: True if user is authenticated, False otherwise.
+        """
+        return bool(request.user and request.user.is_authenticated)
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         """
         Check if user is the sender.
         

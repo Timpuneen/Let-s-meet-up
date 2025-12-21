@@ -1,23 +1,40 @@
-from django.db.models import Q
-from rest_framework import viewsets, status
+from typing import Any, Dict, List, Optional, Type
+
+from django.db.models import Q, QuerySet
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.serializers import Serializer
 
-from apps.users.serializers import UserSerializer
 from apps.users.models import User
+from apps.users.serializers import UserSerializer
 
-from .models import Friendship, FRIENDSHIP_STATUS_PENDING, FRIENDSHIP_STATUS_ACCEPTED
+from .models import (
+    FRIENDSHIP_STATUS_ACCEPTED,
+    FRIENDSHIP_STATUS_PENDING,
+    FRIENDSHIP_STATUS_REJECTED,
+    Friendship,
+)
+from .permissions import IsReceiver, IsSenderOrReceiverOrReadOnly
 from .serializers import (
-    FriendshipSerializer,
-    FriendshipListSerializer,
     FriendshipCreateSerializer,
+    FriendshipListSerializer,
     FriendshipResponseSerializer,
+    FriendshipSerializer,
 )
-from .permissions import (
-    IsSenderOrReceiverOrReadOnly,
-    IsReceiver,
-)
+
+
+FRIENDSHIP_TYPE_RECEIVED = 'received'
+FRIENDSHIP_TYPE_SENT = 'sent'
+
+QUERY_PARAM_TYPE = 'type'
+QUERY_PARAM_STATUS = 'status'
+QUERY_PARAM_USER_EMAIL = 'user_email'
+
+CHECK_STATUS_SELF = 'self'
+CHECK_STATUS_NONE = 'none'
 
 
 class FriendshipViewSet(viewsets.ModelViewSet):
@@ -40,7 +57,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
     
     permission_classes = [IsAuthenticated, IsSenderOrReceiverOrReadOnly]
     
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Friendship]:
         """
         Get friendships based on user role and filters.
         
@@ -50,24 +67,26 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Friendship.objects.select_related('sender', 'receiver')
         
-
         queryset = queryset.filter(Q(sender=user) | Q(receiver=user))
         
         if self.action == 'list':
-            friendship_type = self.request.query_params.get('type', 'received')
+            friendship_type = self.request.query_params.get(
+                QUERY_PARAM_TYPE, 
+                FRIENDSHIP_TYPE_RECEIVED
+            )
             
-            if friendship_type == 'sent':
+            if friendship_type == FRIENDSHIP_TYPE_SENT:
                 queryset = queryset.filter(sender=user)
-            elif friendship_type == 'received':
+            elif friendship_type == FRIENDSHIP_TYPE_RECEIVED:
                 queryset = queryset.filter(receiver=user)
         
-        status_filter = self.request.query_params.get('status')
+        status_filter = self.request.query_params.get(QUERY_PARAM_STATUS)
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         
         return queryset.order_by('-created_at')
     
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[Serializer]:
         """
         Return appropriate serializer class based on action.
         
@@ -84,12 +103,14 @@ class FriendshipViewSet(viewsets.ModelViewSet):
             return UserSerializer
         return FriendshipSerializer
     
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Create a new friend request.
         
         Args:
             request: The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
             
         Returns:
             Response: Created friendship data or error.
@@ -104,29 +125,45 @@ class FriendshipViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
     
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Disable update method.
         
         Use respond action instead for accepting/rejecting requests.
+        
+        Args:
+            request: The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+            
+        Returns:
+            Response: Error message with 405 status.
         """
         return Response(
             {'detail': 'Use the "respond" action to accept or reject friend requests'},
             status=status.HTTP_405_METHOD_NOT_ALLOWED
         )
     
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Disable partial update method.
         
         Use respond action instead for accepting/rejecting requests.
+        
+        Args:
+            request: The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+            
+        Returns:
+            Response: Error message with 405 status.
         """
         return Response(
             {'detail': 'Use the "respond" action to accept or reject friend requests'},
             status=status.HTTP_405_METHOD_NOT_ALLOWED
         )
     
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Remove friendship or cancel friend request.
         
@@ -136,6 +173,8 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         
         Args:
             request: The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
             
         Returns:
             Response: Success or error message.
@@ -153,7 +192,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsReceiver])
-    def respond(self, request, pk=None):
+    def respond(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Respond to a friend request (accept or reject).
         
@@ -185,7 +224,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         return Response(response_serializer.data)
     
     @action(detail=False, methods=['get'])
-    def pending(self, request):
+    def pending(self, request: Request) -> Response:
         """
         Get all pending friend requests for the current user.
         
@@ -209,7 +248,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
-    def friends(self, request):
+    def friends(self, request: Request) -> Response:
         """
         Get all friends of the current user (accepted friendships only).
         
@@ -228,7 +267,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
             status=FRIENDSHIP_STATUS_ACCEPTED
         ).select_related('sender', 'receiver')
         
-        friends = []
+        friends: List[User] = []
         for friendship in friendships:
             friend = friendship.receiver if friendship.sender == user else friendship.sender
             friends.append(friend)
@@ -242,7 +281,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
-    def stats(self, request):
+    def stats(self, request: Request) -> Response:
         """
         Get friendship statistics for the current user.
         
@@ -263,26 +302,26 @@ class FriendshipViewSet(viewsets.ModelViewSet):
             status=FRIENDSHIP_STATUS_ACCEPTED
         )
         
-        stats = {
+        stats: Dict[str, Any] = {
             'friends_count': friends.count(),
             'sent': {
                 'total': sent.count(),
                 'pending': sent.filter(status=FRIENDSHIP_STATUS_PENDING).count(),
                 'accepted': sent.filter(status=FRIENDSHIP_STATUS_ACCEPTED).count(),
-                'rejected': sent.filter(status='rejected').count(),
+                'rejected': sent.filter(status=FRIENDSHIP_STATUS_REJECTED).count(),
             },
             'received': {
                 'total': received.count(),
                 'pending': received.filter(status=FRIENDSHIP_STATUS_PENDING).count(),
                 'accepted': received.filter(status=FRIENDSHIP_STATUS_ACCEPTED).count(),
-                'rejected': received.filter(status='rejected').count(),
+                'rejected': received.filter(status=FRIENDSHIP_STATUS_REJECTED).count(),
             }
         }
         
         return Response(stats)
     
     @action(detail=False, methods=['post'])
-    def check(self, request):
+    def check(self, request: Request) -> Response:
         """
         Check friendship status with another user.
         
@@ -297,10 +336,10 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         Returns:
             Response: Friendship status information.
         """
-        user_email = request.data.get('user_email')
+        user_email = request.data.get(QUERY_PARAM_USER_EMAIL)
         if not user_email:
             return Response(
-                {'detail': 'user_email is required'},
+                {'detail': f'{QUERY_PARAM_USER_EMAIL} is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -314,7 +353,7 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         
         if other_user == request.user:
             return Response({
-                'status': 'self',
+                'status': CHECK_STATUS_SELF,
                 'message': 'This is your own account'
             })
         
@@ -325,12 +364,12 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         
         if not friendship:
             return Response({
-                'status': 'none',
+                'status': CHECK_STATUS_NONE,
                 'message': 'No friendship exists',
                 'can_send_request': True
             })
         
-        response_data = {
+        response_data: Dict[str, Any] = {
             'status': friendship.status,
             'friendship_id': friendship.id,
         }

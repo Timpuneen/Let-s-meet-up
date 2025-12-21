@@ -1,10 +1,18 @@
-from django.db import models
+from typing import Any
+
+from django.db.models import (
+    CharField,
+    SlugField,
+    ForeignKey,
+    CASCADE,
+    Index,
+)
 from django.utils.text import slugify
 
 from apps.abstracts.models import AbstractTimestampedModel
 
-CATEGORY_NAME_MAX_LENGTH = 100
-CATEGORY_SLUG_MAX_LENGTH = 100
+CATEGORY_NAME_MAX_LENGTH: int = 100
+CATEGORY_SLUG_MAX_LENGTH: int = 100
 
 
 class Category(AbstractTimestampedModel):
@@ -18,15 +26,16 @@ class Category(AbstractTimestampedModel):
         name (str): Human-readable category name.
         slug (str): URL-friendly identifier for the category.
         created_at (datetime): Creation timestamp (from AbstractTimestampedModel).
+        updated_at (datetime): Last update timestamp (from AbstractTimestampedModel).
     """
     
-    name = models.CharField(
+    name = CharField(
         max_length=CATEGORY_NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Category Name',
         help_text='Human-readable name of the category',
     )
-    slug = models.SlugField(
+    slug = SlugField(
         max_length=CATEGORY_SLUG_MAX_LENGTH,
         unique=True,
         verbose_name='Slug',
@@ -39,8 +48,8 @@ class Category(AbstractTimestampedModel):
         verbose_name_plural = 'Categories'
         ordering = ['name']
         indexes = [
-            models.Index(fields=['slug']),
-            models.Index(fields=['name']),
+            Index(fields=['slug']),
+            Index(fields=['name']),
         ]
     
     def __str__(self) -> str:
@@ -61,7 +70,7 @@ class Category(AbstractTimestampedModel):
         """
         return f"Category(name={self.name}, slug={self.slug})"
     
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """
         Save the category instance.
         
@@ -87,18 +96,19 @@ class EventCategory(AbstractTimestampedModel):
         event (Event): Foreign key to the event.
         category (Category): Foreign key to the category.
         created_at (datetime): When this relationship was created (from AbstractTimestampedModel).
+        updated_at (datetime): Last update timestamp (from AbstractTimestampedModel).
     """
     
-    event = models.ForeignKey(
+    event = ForeignKey(
         'events.Event',
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='event_categories',
         verbose_name='Event',
         help_text='Event being categorized',
     )
-    category = models.ForeignKey(
+    category = ForeignKey(
         Category,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='event_categories',
         verbose_name='Category',
         help_text='Category assigned to the event',
@@ -111,8 +121,8 @@ class EventCategory(AbstractTimestampedModel):
         ordering = ['event', 'category']
         unique_together = [['event', 'category']]
         indexes = [
-            models.Index(fields=['event']),
-            models.Index(fields=['category']),
+            Index(fields=['event']),
+            Index(fields=['category']),
         ]
     
     def __str__(self) -> str:

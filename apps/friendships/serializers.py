@@ -1,16 +1,28 @@
-from django.db import models
+from typing import Any, Dict
 
+from django.db.models import Q
 from rest_framework.serializers import (
+    CharField,
     ModelSerializer,
     SerializerMethodField,
     ValidationError,
-    CharField,
 )
 
-from apps.users.serializers import UserSerializer
 from apps.users.models import User
+from apps.users.serializers import UserSerializer
 
-from .models import Friendship, FRIENDSHIP_STATUS_PENDING, FRIENDSHIP_STATUS_ACCEPTED
+from .models import (
+    FRIENDSHIP_STATUS_ACCEPTED,
+    FRIENDSHIP_STATUS_PENDING,
+    FRIENDSHIP_STATUS_REJECTED,
+    Friendship,
+)
+
+
+FRIENDSHIP_ACTION_ACCEPT = 'accept'
+FRIENDSHIP_ACTION_REJECT = 'reject'
+
+VALID_FRIENDSHIP_ACTIONS = [FRIENDSHIP_ACTION_ACCEPT, FRIENDSHIP_ACTION_REJECT]
 
 
 class FriendshipSerializer(ModelSerializer):
@@ -53,8 +65,9 @@ class FriendshipListSerializer(ModelSerializer):
             'status', 'created_at'
         ]
     
-    def get_sender_name(self, obj):
-        """Get sender name.
+    def get_sender_name(self, obj: Friendship) -> str:
+        """
+        Get sender name.
         
         Args:
             obj: Friendship instance.
@@ -64,8 +77,9 @@ class FriendshipListSerializer(ModelSerializer):
         """
         return obj.sender.name
     
-    def get_sender_email(self, obj):
-        """Get sender email.
+    def get_sender_email(self, obj: Friendship) -> str:
+        """
+        Get sender email.
         
         Args:
             obj: Friendship instance.
@@ -75,8 +89,9 @@ class FriendshipListSerializer(ModelSerializer):
         """
         return obj.sender.email
     
-    def get_receiver_name(self, obj):
-        """Get receiver name.
+    def get_receiver_name(self, obj: Friendship) -> str:
+        """
+        Get receiver name.
         
         Args:
             obj: Friendship instance.
@@ -86,8 +101,9 @@ class FriendshipListSerializer(ModelSerializer):
         """
         return obj.receiver.name
     
-    def get_receiver_email(self, obj):
-        """Get receiver email.
+    def get_receiver_email(self, obj: Friendship) -> str:
+        """
+        Get receiver email.
         
         Args:
             obj: Friendship instance.
@@ -117,7 +133,7 @@ class FriendshipCreateSerializer(ModelSerializer):
         model = Friendship
         fields = ['receiver_email']
 
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate friendship creation.
         
@@ -147,8 +163,8 @@ class FriendshipCreateSerializer(ModelSerializer):
             })
         
         existing_friendship = Friendship.objects.filter(
-            models.Q(sender=sender, receiver=receiver) | 
-            models.Q(sender=receiver, receiver=sender)
+            Q(sender=sender, receiver=receiver) | 
+            Q(sender=receiver, receiver=sender)
         ).first()
         
         if existing_friendship:
@@ -165,15 +181,13 @@ class FriendshipCreateSerializer(ModelSerializer):
                 raise ValidationError({
                     'receiver_email': 'You are already friends with this user'
                 })
-            else:  
-                pass
         
         data['receiver'] = receiver
         data['sender'] = sender
         
         return data
     
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> Friendship:
         """
         Create a new friendship request.
         
@@ -186,9 +200,9 @@ class FriendshipCreateSerializer(ModelSerializer):
         validated_data.pop('receiver_email', None)
         
         existing = Friendship.objects.filter(
-            models.Q(sender=validated_data['sender'], receiver=validated_data['receiver']) |
-            models.Q(sender=validated_data['receiver'], receiver=validated_data['sender']),
-            status='rejected'
+            Q(sender=validated_data['sender'], receiver=validated_data['receiver']) |
+            Q(sender=validated_data['receiver'], receiver=validated_data['sender']),
+            status=FRIENDSHIP_STATUS_REJECTED
         ).first()
         
         if existing:
@@ -217,7 +231,7 @@ class FriendshipResponseSerializer(ModelSerializer):
         model = Friendship
         fields = ['action']
 
-    def validate_action(self, value):
+    def validate_action(self, value: str) -> str:
         """
         Validate action value.
         
@@ -230,11 +244,13 @@ class FriendshipResponseSerializer(ModelSerializer):
         Raises:
             ValidationError: If action is invalid.
         """
-        if value not in ['accept', 'reject']:
-            raise ValidationError('Action must be "accept" or "reject"')
+        if value not in VALID_FRIENDSHIP_ACTIONS:
+            raise ValidationError(
+                f'Action must be one of: {", ".join(VALID_FRIENDSHIP_ACTIONS)}'
+            )
         return value
     
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate friendship response.
         
@@ -256,7 +272,7 @@ class FriendshipResponseSerializer(ModelSerializer):
         
         return data
     
-    def update(self, instance, validated_data):
+    def update(self, instance: Friendship, validated_data: Dict[str, Any]) -> Friendship:
         """
         Update friendship status based on action.
         
@@ -269,9 +285,9 @@ class FriendshipResponseSerializer(ModelSerializer):
         """
         action = validated_data.get('action')
         
-        if action == 'accept':
+        if action == FRIENDSHIP_ACTION_ACCEPT:
             instance.accept()
-        elif action == 'reject':
+        elif action == FRIENDSHIP_ACTION_REJECT:
             instance.reject()
         
         return instance

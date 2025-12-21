@@ -1,4 +1,10 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from typing import Any
+
+from rest_framework.permissions import SAFE_METHODS, BasePermission
+from rest_framework.request import Request
+from rest_framework.views import APIView
+
+from apps.participants.models import PARTICIPANT_STATUS_ACCEPTED, EventParticipant
 
 
 class CanInviteToEvent(BasePermission):
@@ -9,11 +15,20 @@ class CanInviteToEvent(BasePermission):
     Checks event.can_user_invite() logic.
     """
     
-    def has_permission(self, request, view):
-        """Check if user is authenticated."""
-        return request.user and request.user.is_authenticated
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """
+        Check if user is authenticated.
+        
+        Args:
+            request: The request object.
+            view: The view object.
+            
+        Returns:
+            bool: True if user is authenticated, False otherwise.
+        """
+        return bool(request.user and request.user.is_authenticated)
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         """
         Check if user can invite to the event.
         
@@ -36,11 +51,20 @@ class IsInvitedUserOrInviterOrReadOnly(BasePermission):
     - Inviter can view but cannot modify
     """
     
-    def has_permission(self, request, view):
-        """Check if user is authenticated."""
-        return request.user and request.user.is_authenticated
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """
+        Check if user is authenticated.
+        
+        Args:
+            request: The request object.
+            view: The view object.
+            
+        Returns:
+            bool: True if user is authenticated, False otherwise.
+        """
+        return bool(request.user and request.user.is_authenticated)
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         """
         Check if user is involved in the invitation.
         
@@ -69,11 +93,20 @@ class IsInvitedUser(BasePermission):
     Used for accept/reject actions.
     """
     
-    def has_permission(self, request, view):
-        """Check if user is authenticated."""
-        return request.user and request.user.is_authenticated
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """
+        Check if user is authenticated.
+        
+        Args:
+            request: The request object.
+            view: The view object.
+            
+        Returns:
+            bool: True if user is authenticated, False otherwise.
+        """
+        return bool(request.user and request.user.is_authenticated)
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         """
         Check if user is the invited user.
         
@@ -95,11 +128,20 @@ class IsEventParticipant(BasePermission):
     Used to verify user can invite others based on event settings.
     """
     
-    def has_permission(self, request, view):
-        """Check if user is authenticated."""
-        return request.user and request.user.is_authenticated
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        """
+        Check if user is authenticated.
+        
+        Args:
+            request: The request object.
+            view: The view object.
+            
+        Returns:
+            bool: True if user is authenticated, False otherwise.
+        """
+        return bool(request.user and request.user.is_authenticated)
     
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         """
         Check if user is a participant of the event.
         
@@ -111,8 +153,6 @@ class IsEventParticipant(BasePermission):
         Returns:
             bool: True if user is participant, False otherwise.
         """
-        from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
-        
         event = obj.event if hasattr(obj, 'event') else obj
         
         if request.user == event.organizer:

@@ -1,9 +1,11 @@
+from typing import Any
+
 from django.conf import settings
-from django.db import models, connection
 from django.core.exceptions import ValidationError
+from django.db import connection, models
 
 from apps.abstracts.models import AbstractTimestampedModel
-from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
+from apps.participants.models import PARTICIPANT_STATUS_ACCEPTED, EventParticipant
 
 
 INVITATION_STATUS_MAX_LENGTH = 20
@@ -106,7 +108,7 @@ class EventInvitation(AbstractTimestampedModel):
         Ensures that:
         - Event is not deleted.
         - User is not the organizer.
-        - User is not already a participant (только для pending инвайтов).
+        - User is not already a participant (only for pending invitations).
         - Invited_by has permission to invite.
         
         Raises:
@@ -128,7 +130,7 @@ class EventInvitation(AbstractTimestampedModel):
         if not self.event.can_user_invite(self.invited_by):
             raise ValidationError('You do not have permission to invite users to this event')
     
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """
         Save the invitation instance after validation.
         

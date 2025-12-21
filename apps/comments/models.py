@@ -1,8 +1,16 @@
-from django.conf import settings
-from django.db import models
-from django.core.exceptions import ValidationError
+from typing import Any, List
 
-from apps.abstracts.models import AbstractTimestampedModel, AbstractSoftDeletableModel, SoftDeletableManager
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.db.models import QuerySet
+
+from apps.abstracts.models import (
+    AbstractSoftDeletableModel,
+    AbstractTimestampedModel,
+    SoftDeletableManager,
+)
+
 
 CONTENT_PREVIEW_MAX_LENGTH = 50
 MAX_REPLY_DEPTH = 10
@@ -117,7 +125,7 @@ class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
             if depth >= MAX_REPLY_DEPTH:
                 raise ValidationError(f'Reply depth cannot exceed {MAX_REPLY_DEPTH} levels')
     
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """
         Save the comment instance after validation.
         
@@ -158,15 +166,23 @@ class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
         
         return current
     
-    def get_all_replies(self) -> models.QuerySet:
+    def get_all_replies(self) -> QuerySet['EventComment']:
         """
         Get all replies to this comment (recursive).
         
         Returns:
             QuerySet: All descendant comments.
         """
-        def get_replies_recursive(comment):
-            """Helper function to recursively get all replies."""
+        def get_replies_recursive(comment: 'EventComment') -> List['EventComment']:
+            """
+            Helper function to recursively get all replies.
+            
+            Args:
+                comment: The comment to get replies for.
+                
+            Returns:
+                List[EventComment]: All replies recursively.
+            """
             replies = list(comment.replies.all())
             all_replies = replies.copy()
             

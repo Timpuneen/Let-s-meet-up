@@ -1,9 +1,15 @@
+from typing import Any
+
 from django.conf import settings
 from django.db import models
 
-from apps.abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel, SoftDeletableManager
+from apps.abstracts.models import (
+    AbstractSoftDeletableModel,
+    AbstractTimestampedModel,
+    SoftDeletableManager,
+)
+from apps.participants.models import PARTICIPANT_STATUS_ACCEPTED, EventParticipant
 
-from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
 
 TITLE_MAX_LENGTH = 255
 ADDRESS_MAX_LENGTH = 255
@@ -19,7 +25,6 @@ EVENT_STATUS_CHOICES = [
     (EVENT_STATUS_CANCELLED, 'Cancelled'),
     (EVENT_STATUS_COMPLETED, 'Completed'),
 ]
-
 
 INVITATION_PERM_ORGANIZER = 'organizer'
 INVITATION_PERM_ADMINS = 'admins'
@@ -187,7 +192,7 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
             return False
         return self.get_participants_count() >= self.max_participants
     
-    def can_user_invite(self, user) -> bool:
+    def can_user_invite(self, user: Any) -> bool:
         """
         Check if a user can invite others to this event.
         
@@ -209,6 +214,6 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
             if self.invitation_perm == INVITATION_PERM_ADMINS:
                 return participant.is_admin
             
-            return True  
+            return True
         except EventParticipant.DoesNotExist:
             return False

@@ -1,7 +1,13 @@
 from typing import Any
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.db import models
+from django.db.models import (
+    Q,
+    EmailField,
+    CharField,
+    BooleanField,
+    Index,
+)
 
 from apps.abstracts.models import AbstractSoftDeletableModel, AbstractTimestampedModel, SoftDeletableManager
 from apps.friendships.models import Friendship, FRIENDSHIP_STATUS_ACCEPTED
@@ -122,28 +128,28 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
         updated_at (datetime): Last update timestamp (from AbstractTimestampedModel).
     """
     
-    email = models.EmailField(
+    email: EmailField = EmailField(
         max_length=MAX_EMAIL_LENGTH,
         unique=True,
         verbose_name='Email Address',
         help_text='Unique email address used for authentication',
     )
-    name = models.CharField(
+    name: CharField = CharField(
         max_length=MAX_NAME_LENGTH,
         verbose_name='Name',
         help_text="User's display name",
     )
-    is_active = models.BooleanField(
+    is_active: BooleanField = BooleanField(
         default=True,
         verbose_name='Active',
         help_text='Designates whether this user should be treated as active',
     )
-    is_staff = models.BooleanField(
+    is_staff: BooleanField = BooleanField(
         default=False,
         verbose_name='Staff Status',
         help_text='Designates whether the user can log into the admin site',
     )
-    invitation_privacy = models.CharField(
+    invitation_privacy: CharField = CharField(
         max_length=INVITATION_PRIVACY_MAX_LENGTH,
         choices=INVITATION_PRIVACY_CHOICES,
         default=INVITATION_PRIVACY_EVERYONE,
@@ -151,7 +157,7 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
         help_text='Controls who can invite this user to events',
     )
     
-    objects = UserManager()
+    objects: UserManager = UserManager()
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
@@ -162,8 +168,8 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
         verbose_name_plural = 'Users'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['email']),
-            models.Index(fields=['is_active', 'is_deleted']),
+            Index(fields=['email']),
+            Index(fields=['is_active', 'is_deleted']),
         ]
     
     def __str__(self) -> str:
@@ -199,7 +205,7 @@ class User(AbstractBaseUser, PermissionsMixin, AbstractSoftDeletableModel, Abstr
         
         if self.invitation_privacy == INVITATION_PRIVACY_FRIENDS:
             return Friendship.objects.filter(
-                models.Q(sender=self, receiver=inviter) | models.Q(sender=inviter, receiver=self),
+                Q(sender=self, receiver=inviter) | Q(sender=inviter, receiver=self),
                 status=FRIENDSHIP_STATUS_ACCEPTED
             ).exists()
         

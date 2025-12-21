@@ -1,4 +1,13 @@
-from rest_framework import status
+from typing import Type, List, Any
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -21,34 +30,33 @@ from .serializers import (
 )
 from .permissions import IsPhotoUploaderOrOrganizerOrAdmin, IsEventOrganizerOrAdmin
 
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 100
+PHOTOS_TAGS = ['Photos']
+ORDERING = ['-is_cover', '-created_at']
+DATE_FORMAT = '%b %d, %Y'
+PARTIAL_METHOD = 'PATCH'
 
 class PhotoPagination(PageNumberPagination):
-    """
-    Pagination class for photos.
+    """Pagination class for photos.
     
     Provides page-based pagination with customizable page size.
     """
-    page_size = 20
+    page_size = DEFAULT_PAGE_SIZE
     page_size_query_param = 'page_size'
-    max_page_size = 100
+    max_page_size = MAX_PAGE_SIZE
 
 
 class PhotoViewSet(ViewSet):
+    """ViewSet for managing EventPhoto instances.
+
+    Provides endpoints for listing, creating, retrieving, updating, deleting,
+    and managing cover photos for event photos.
     """
-    ViewSet for managing EventPhoto instances.
-    
-    Provides endpoints for:
-    - Listing photos (with filtering by event and user)
-    - Creating photos (participants and organizers only)
-    - Retrieving photo details
-    - Updating photos (uploader only)
-    - Deleting photos (uploader, organizer, or admin)
-    - Setting/removing cover photos (organizer or admin)
-    """
-    
-    serializer_class = PhotoSerializer
-    permission_classes = [IsAuthenticated, IsPhotoUploaderOrOrganizerOrAdmin]
-    pagination_class = PhotoPagination
+
+    serializer_class: Type[PhotoSerializer] = PhotoSerializer
+    permission_classes: List[type] = [IsAuthenticated, IsPhotoUploaderOrOrganizerOrAdmin]
+    pagination_class: Type[PhotoPagination] = PhotoPagination
     
     def get_queryset(self) -> QuerySet:
         """
@@ -60,7 +68,7 @@ class PhotoViewSet(ViewSet):
         return EventPhoto.objects.all().select_related('uploaded_by', 'event')
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='List all photos',
         description='Returns a paginated list of photos. Can be filtered by event_id and user_id.',
         parameters=[
@@ -94,7 +102,7 @@ class PhotoViewSet(ViewSet):
             ),
         ],
         responses={
-            200: OpenApiResponse(
+            HTTP_200_OK: OpenApiResponse(
                 response=PhotoListSerializer(many=True),
                 description='Paginated list of photos'
             ),
@@ -123,25 +131,25 @@ class PhotoViewSet(ViewSet):
         if user_id:
             queryset = queryset.filter(uploaded_by_id=user_id)
         
-        queryset = queryset.order_by('-is_cover', '-created_at')
-        
+        queryset = queryset.order_by(*ORDERING)
+
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request)
-        
+
         if page is not None:
             serializer = PhotoListSerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)
-        
+
         serializer = PhotoListSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=HTTP_200_OK)
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='Get photo details',
         description='Returns detailed information about a specific photo.',
         responses={
-            200: OpenApiResponse(response=PhotoSerializer, description='Photo details'),
-            404: OpenApiResponse(description='Photo not found'),
+            HTTP_200_OK: OpenApiResponse(response=PhotoSerializer, description='Photo details'),
+            HTTP_404_NOT_FOUND: OpenApiResponse(description='Photo not found'),
         },
     )
     def retrieve(self, request: Request, pk: int) -> Response:
@@ -156,18 +164,18 @@ class PhotoViewSet(ViewSet):
         """
         photo = get_object_or_404(self.get_queryset(), pk=pk)
         serializer = PhotoSerializer(photo)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=HTTP_200_OK)
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='Upload new photo',
         description='Upload a new photo to an event. Must be event participant or organizer.',
         request=PhotoCreateSerializer,
         responses={
-            201: OpenApiResponse(response=PhotoSerializer, description='Photo uploaded successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Not a participant or organizer'),
+            HTTP_201_CREATED: OpenApiResponse(response=PhotoSerializer, description='Photo uploaded successfully'),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            HTTP_403_FORBIDDEN: OpenApiResponse(description='Not a participant or organizer'),
         },
     )
     def create(self, request: Request) -> Response:
@@ -186,19 +194,19 @@ class PhotoViewSet(ViewSet):
         photo = serializer.save(uploaded_by=request.user)
         
         response_serializer = PhotoSerializer(photo)
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(response_serializer.data, status=HTTP_201_CREATED)
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='Update photo',
         description='Update photo caption and URL. Only the uploader can update.',
         request=PhotoUpdateSerializer,
         responses={
-            200: OpenApiResponse(response=PhotoSerializer, description='Photo updated successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied'),
-            404: OpenApiResponse(description='Photo not found'),
+            HTTP_200_OK: OpenApiResponse(response=PhotoSerializer, description='Photo updated successfully'),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            HTTP_403_FORBIDDEN: OpenApiResponse(description='Permission denied'),
+            HTTP_404_NOT_FOUND: OpenApiResponse(description='Photo not found'),
         },
     )
     def update(self, request: Request, pk: int) -> Response:
@@ -217,7 +225,7 @@ class PhotoViewSet(ViewSet):
         
         self.check_object_permissions(request, photo)
         
-        partial = request.method == 'PATCH'
+        partial = request.method == PARTIAL_METHOD
         serializer = PhotoUpdateSerializer(
             photo,
             data=request.data,
@@ -227,19 +235,19 @@ class PhotoViewSet(ViewSet):
         photo = serializer.save()
         
         response_serializer = PhotoSerializer(photo)
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
+        return Response(response_serializer.data, status=HTTP_200_OK)
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='Partial update photo',
         description='Partially update photo caption and URL. Only the uploader can update.',
         request=PhotoUpdateSerializer,
         responses={
-            200: OpenApiResponse(response=PhotoSerializer, description='Photo updated successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied'),
-            404: OpenApiResponse(description='Photo not found'),
+            HTTP_200_OK: OpenApiResponse(response=PhotoSerializer, description='Photo updated successfully'),
+            HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            HTTP_403_FORBIDDEN: OpenApiResponse(description='Permission denied'),
+            HTTP_404_NOT_FOUND: OpenApiResponse(description='Photo not found'),
         },
     )
     def partial_update(self, request: Request, pk: int) -> Response:
@@ -257,14 +265,14 @@ class PhotoViewSet(ViewSet):
         return self.update(request, pk=pk)
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='Delete photo',
         description='Soft delete a photo. Uploader, event organizer, or admin can delete.',
         responses={
-            204: OpenApiResponse(description='Photo deleted successfully'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied'),
-            404: OpenApiResponse(description='Photo not found'),
+            HTTP_204_NO_CONTENT: OpenApiResponse(description='Photo deleted successfully'),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            HTTP_403_FORBIDDEN: OpenApiResponse(description='Permission denied'),
+            HTTP_404_NOT_FOUND: OpenApiResponse(description='Photo not found'),
         },
     )
     def destroy(self, request: Request, pk: int) -> Response:
@@ -284,17 +292,17 @@ class PhotoViewSet(ViewSet):
         self.check_object_permissions(request, photo)
         
         photo.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=HTTP_204_NO_CONTENT)
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='Set as cover photo',
         description='Set this photo as the event cover photo. Only event organizer or admin can do this.',
         responses={
-            200: OpenApiResponse(response=PhotoSerializer, description='Cover photo set successfully'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied - not event organizer'),
-            404: OpenApiResponse(description='Photo not found'),
+            HTTP_200_OK: OpenApiResponse(response=PhotoSerializer, description='Cover photo set successfully'),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            HTTP_403_FORBIDDEN: OpenApiResponse(description='Permission denied - not event organizer'),
+            HTTP_404_NOT_FOUND: OpenApiResponse(description='Photo not found'),
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEventOrganizerOrAdmin])
@@ -318,17 +326,17 @@ class PhotoViewSet(ViewSet):
         photo.set_as_cover()
         
         serializer = PhotoSerializer(photo)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=HTTP_200_OK)
     
     @extend_schema(
-        tags=['Photos'],
+        tags=PHOTOS_TAGS,
         summary='Remove cover status',
         description='Remove cover photo status from this photo. Only event organizer or admin can do this.',
         responses={
-            200: OpenApiResponse(response=PhotoSerializer, description='Cover status removed successfully'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Permission denied - not event organizer'),
-            404: OpenApiResponse(description='Photo not found'),
+            HTTP_200_OK: OpenApiResponse(response=PhotoSerializer, description='Cover status removed successfully'),
+            HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            HTTP_403_FORBIDDEN: OpenApiResponse(description='Permission denied - not event organizer'),
+            HTTP_404_NOT_FOUND: OpenApiResponse(description='Photo not found'),
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEventOrganizerOrAdmin])
@@ -351,5 +359,5 @@ class PhotoViewSet(ViewSet):
         photo.remove_as_cover()
         
         serializer = PhotoSerializer(photo)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=HTTP_200_OK)
 

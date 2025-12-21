@@ -39,7 +39,7 @@ class CommentSerializer(serializers.ModelSerializer):
         Get the depth of this comment in the thread.
         
         Args:
-            obj (EventComment): The comment instance.
+            obj: The comment instance.
         
         Returns:
             int: Depth level (0 for top-level comments).
@@ -51,7 +51,7 @@ class CommentSerializer(serializers.ModelSerializer):
         Get the total number of replies to this comment.
         
         Args:
-            obj (EventComment): The comment instance.
+            obj: The comment instance.
         
         Returns:
             int: Number of direct and nested replies.
@@ -86,11 +86,27 @@ class CommentListSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user', 'created_at']
     
     def get_depth(self, obj: EventComment) -> int:
-        """Get the depth of this comment in the thread."""
+        """
+        Get the depth of this comment in the thread.
+        
+        Args:
+            obj: The comment instance.
+        
+        Returns:
+            int: Depth level (0 for top-level comments).
+        """
         return obj.get_depth()
     
     def get_reply_count(self, obj: EventComment) -> int:
-        """Get the total number of replies to this comment."""
+        """
+        Get the total number of replies to this comment.
+        
+        Args:
+            obj: The comment instance.
+        
+        Returns:
+            int: Number of direct and nested replies.
+        """
         return obj.get_reply_count()
 
 
@@ -115,7 +131,7 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         - Parent comment belongs to the same event.
         
         Args:
-            data (dict): Validated field data.
+            data: Validated field data.
         
         Returns:
             dict: Validated data.
@@ -144,7 +160,7 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         The user is automatically set from the request context.
         
         Args:
-            validated_data (dict): Validated data for the new comment.
+            validated_data: Validated data for the new comment.
         
         Returns:
             EventComment: The created EventComment instance.
@@ -169,8 +185,8 @@ class CommentUpdateSerializer(serializers.ModelSerializer):
         Update an existing EventComment instance.
         
         Args:
-            instance (EventComment): The EventComment instance to update.
-            validated_data (dict): Validated data for the update.
+            instance: The EventComment instance to update.
+            validated_data: Validated data for the update.
         
         Returns:
             EventComment: The updated EventComment instance.
@@ -208,7 +224,15 @@ class NestedReplySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
     
     def get_depth(self, obj: EventComment) -> int:
-        """Get the depth of this comment in the thread."""
+        """
+        Get the depth of this comment in the thread.
+        
+        Args:
+            obj: The comment instance.
+        
+        Returns:
+            int: Depth level (0 for top-level comments).
+        """
         return obj.get_depth()
     
     def get_replies(self, obj: EventComment) -> List[Dict[str, Any]]:
@@ -216,11 +240,10 @@ class NestedReplySerializer(serializers.ModelSerializer):
         Get all direct replies to this comment.
         
         Args:
-            obj (EventComment): The comment instance.
+            obj: The comment instance.
         
         Returns:
             list: Serialized nested replies.
         """
         replies = obj.replies.all().order_by('created_at')
         return NestedReplySerializer(replies, many=True).data
-
