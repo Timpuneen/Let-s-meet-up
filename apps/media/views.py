@@ -1,4 +1,4 @@
-from typing import Type, List, Any
+from typing import Type, List
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
