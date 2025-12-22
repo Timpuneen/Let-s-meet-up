@@ -66,7 +66,6 @@ class Command(BaseSeederCommand):
         Returns:
             Number of photos created.
         """
-        # Check dependencies
         self.check_dependencies({
             'Event': Event,
             'User': User,
@@ -102,7 +101,6 @@ class Command(BaseSeederCommand):
             self.stdout.write(self.style.ERROR('No events found'))
             return 0
 
-        # Photo URL generators
         photo_sources: List[Callable[[], str]] = [
             lambda: f"https://picsum.photos/seed/{random.randint(1, 10000)}/800/600",
             lambda: f"https://source.unsplash.com/800x600/?{random_choice(['party', 'conference', 'meeting', 'sports', 'concert', 'food', 'nature', 'people', 'fitness', 'travel'])}",
@@ -112,19 +110,16 @@ class Command(BaseSeederCommand):
         created_count: int = 0
         events_processed: int = 0
 
-        # Distribute photos across events
         for event in events:
             if created_count >= target_count:
                 break
 
-            # Get participants for this event
             participants = EventParticipant.objects.filter(event=event).select_related('user')
             potential_uploaders = [p.user for p in participants] + [event.organizer]
 
             if not potential_uploaders:
                 continue
 
-            # Determine number of photos for this event
             num_photos = random.randint(min_per_event, max_per_event)
 
             for i in range(num_photos):
@@ -140,7 +135,7 @@ class Command(BaseSeederCommand):
                     uploaded_by=uploader,
                     url=photo_url,
                     caption=fake.sentence() if random_bool(0.5) else None,
-                    is_cover=(i == 0)  # First photo is cover
+                    is_cover=(i == 0)
                 )
                 created_count += 1
 

@@ -13,7 +13,6 @@ from django.utils import timezone
 from faker import Faker
 
 
-# Initialize Faker instance (shared across all seeders)
 fake: Faker = Faker()
 
 T = TypeVar('T')

@@ -62,13 +62,11 @@ class Command(BaseSeederCommand):
 
         users: List[User] = []
 
-        # Create admin if requested
         if create_admin:
             admin = self._create_admin()
             if admin:
                 users.append(admin)
 
-        # Create regular users
         regular_users = self._create_users(count)
         users.extend(regular_users)
 
@@ -124,7 +122,6 @@ class Command(BaseSeederCommand):
             name: str = fake.name()
             email: str = fake.email()
 
-            # Ensure unique email
             if User.objects.filter(email=email).exists():
                 email = f"{fake.user_name()}_{i}@example.com"
 
@@ -133,7 +130,7 @@ class Command(BaseSeederCommand):
                 name=name,
                 password=DEFAULT_PASSWORD,
                 invitation_privacy=random_choice(privacy_choices),
-                is_active=random_choice([True, True, True, False])  # 75% active
+                is_active=random_choice([True, True, True, False])
             )
             users.append(user)
 

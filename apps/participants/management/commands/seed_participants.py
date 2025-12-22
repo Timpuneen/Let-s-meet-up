@@ -59,7 +59,6 @@ class Command(BaseSeederCommand):
         Returns:
             Number of participants created.
         """
-        # Check dependencies
         self.check_dependencies({
             'Event': Event,
             'User': User,
@@ -96,20 +95,15 @@ class Command(BaseSeederCommand):
         created_count: int = 0
 
         for event in events:
-            # Determine how many participants to create for this event
             num_participants = random.randint(min_count, max_count)
 
-            # Respect max_participants if set
             if event.max_participants:
                 num_participants = min(num_participants, event.max_participants - 1)
 
-            # Get potential participants (exclude organizer)
             potential_participants = [u for u in users if u != event.organizer]
 
-            # Select random participants
             participants = random_sample(potential_participants, num_participants)
 
-            # Create participant records
             for user in participants:
                 if not EventParticipant.objects.filter(event=event, user=user).exists():
                     is_admin = random_bool(ADMIN_PROBABILITY)

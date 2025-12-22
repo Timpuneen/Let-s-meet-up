@@ -59,7 +59,6 @@ class Command(BaseSeederCommand):
         Returns:
             Number of invitations created.
         """
-        # Check dependencies
         self.check_dependencies({
             'Event': Event,
             'User': User,
@@ -96,19 +95,16 @@ class Command(BaseSeederCommand):
 
         created_count: int = 0
 
-        # Status distribution: 60% pending, 25% accepted, 15% rejected
         statuses: List[str] = [
             INVITATION_STATUS_PENDING
         ] * 60 + [INVITATION_STATUS_ACCEPTED] * 25 + [INVITATION_STATUS_REJECTED] * 15
 
         for event in events:
-            # Get existing participant IDs
             existing_participant_ids: Set[int] = set(
                 EventParticipant.objects.filter(event=event).values_list('user_id', flat=True)
             )
             existing_participant_ids.add(event.organizer_id)
 
-            # Determine who can invite based on invitation_perm
             potential_inviters: List[User] = [event.organizer]
 
             if event.invitation_perm == INVITATION_PERM_PARTICIPANTS:
@@ -124,15 +120,12 @@ class Command(BaseSeederCommand):
             if not potential_inviters:
                 continue
 
-            # Determine number of invitations
             num_invitations = random.randint(min_count, max_count)
 
-            # Get existing invitation user IDs
             existing_invitation_user_ids: Set[int] = set(
                 EventInvitation.objects.filter(event=event).values_list('invited_user_id', flat=True)
             )
 
-            # Get potential invitees (users not already participating or invited)
             potential_invitees = [
                 u for u in users
                 if u.id not in existing_participant_ids
@@ -142,10 +135,8 @@ class Command(BaseSeederCommand):
             if not potential_invitees:
                 continue
 
-            # Select random invitees
             invitees = random_sample(potential_invitees, num_invitations)
 
-            # Create invitations
             for invitee in invitees:
                 inviter = random_choice(potential_inviters)
                 status = random_choice(statuses)
@@ -159,7 +150,6 @@ class Command(BaseSeederCommand):
                     )
                     created_count += 1
                 except Exception:
-                    # Skip if validation fails
                     continue
 
         self.stdout.write(f'  Created {created_count} invitations across events')

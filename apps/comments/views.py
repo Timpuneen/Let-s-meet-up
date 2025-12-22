@@ -103,7 +103,7 @@ class CommentViewSet(ViewSet):
         responses={
             status.HTTP_200_OK: OpenApiResponse(
                 response=CommentListSerializer(many=True),
-                description='Paginated list of comments'
+                description='Paginated list of comments. When paginated, response includes: {"count": int, "next": str|null, "previous": str|null, "results": [...]}. When not paginated, returns a simple list.'
             ),
         },
     )

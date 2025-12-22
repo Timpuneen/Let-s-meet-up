@@ -49,7 +49,6 @@ class Command(BaseSeederCommand):
         Returns:
             Number of friendships created.
         """
-        # Check dependencies
         self.check_dependencies({'User': User})
 
         count: int = options.get('count', DEFAULT_FRIENDSHIP_COUNT)
@@ -76,12 +75,11 @@ class Command(BaseSeederCommand):
             self.stdout.write(self.style.ERROR('Need at least 2 users to create friendships'))
             return 0
 
-        # 70% accepted, 30% pending
         statuses: List[str] = [FRIENDSHIP_STATUS_ACCEPTED] * 7 + [FRIENDSHIP_STATUS_PENDING] * 3
 
         created_count: int = 0
         attempts: int = 0
-        max_attempts: int = count * 3  # Avoid infinite loops
+        max_attempts: int = count * 3
 
         while created_count < count and attempts < max_attempts:
             attempts += 1
@@ -89,11 +87,9 @@ class Command(BaseSeederCommand):
             sender = random_choice(users)
             receiver = random_choice(users)
 
-            # Skip if same user
             if sender == receiver:
                 continue
 
-            # Skip if friendship already exists (in either direction)
             if Friendship.objects.filter(sender=sender, receiver=receiver).exists():
                 continue
             if Friendship.objects.filter(sender=receiver, receiver=sender).exists():

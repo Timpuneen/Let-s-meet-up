@@ -17,9 +17,6 @@ from apps.media.models import EventPhoto
 from apps.participants.models import EventParticipant
 
 from .models import Event
-
-
-# Named tuples for grouped constants - better organization and maintainability
 class EventStatuses(NamedTuple):
     """Event status constants."""
     draft: str = 'draft'
@@ -67,7 +64,6 @@ class CapacityThresholds(NamedTuple):
     medium: int = 70
 
 
-# Instantiate named tuples
 EVENT_STATUS = EventStatuses()
 INVITATION_STATUS = InvitationStatuses()
 FILTER_VALUE = FilterValues()
@@ -75,7 +71,6 @@ ADMIN_URL = AdminUrls()
 COLORS = AdminColors()
 CAPACITY_THRESHOLD = CapacityThresholds()
 
-# Simple constants that don't need grouping
 PARTICIPANTS_PREVIEW_LIMIT = 10
 DATE_FORMAT = '%b %d, %Y %H:%M'
 

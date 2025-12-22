@@ -139,7 +139,6 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                # Foundation layer (no dependencies)
                 if not options['skip_geography']:
                     self.stdout.write('\n[1/9] Seeding Geography...')
                     call_command('seed_geography', verbosity=options.get('verbosity', 1))
@@ -152,7 +151,6 @@ class Command(BaseCommand):
                     self.stdout.write('\n[3/9] Seeding Categories...')
                     call_command('seed_categories', verbosity=options.get('verbosity', 1))
 
-                # Secondary layer (depends on foundation)
                 if not options['skip_events']:
                     self.stdout.write('\n[4/9] Seeding Events...')
                     call_command('seed_events', count=options['events'], verbosity=options.get('verbosity', 1))
@@ -161,7 +159,6 @@ class Command(BaseCommand):
                     self.stdout.write('\n[5/9] Seeding Friendships...')
                     call_command('seed_friendships', count=options['friendships'], verbosity=options.get('verbosity', 1))
 
-                # Tertiary layer (depends on events)
                 if not options['skip_participants']:
                     self.stdout.write('\n[6/9] Seeding Participants...')
                     call_command('seed_participants', verbosity=options.get('verbosity', 1))
@@ -194,7 +191,6 @@ class Command(BaseCommand):
         """Clear all seeded data from the database."""
         self.stdout.write(self.style.WARNING('Clearing all data...'))
 
-        # Delete in reverse dependency order
         EventPhoto.objects.all().delete()
         EventComment.objects.all().delete()
         EventInvitation.objects.all().delete()

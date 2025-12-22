@@ -104,7 +104,7 @@ class PhotoViewSet(ViewSet):
         responses={
             HTTP_200_OK: OpenApiResponse(
                 response=PhotoListSerializer(many=True),
-                description='Paginated list of photos'
+                description='Paginated list of photos. When paginated, response includes: {"count": int, "next": str|null, "previous": str|null, "results": [...]}. When not paginated, returns a simple list.'
             ),
         },
     )
