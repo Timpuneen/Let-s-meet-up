@@ -59,7 +59,6 @@ class Command(BaseSeederCommand):
         Returns:
             Number of comments created.
         """
-        # Check dependencies
         self.check_dependencies({
             'Event': Event,
             'User': User,
@@ -96,15 +95,12 @@ class Command(BaseSeederCommand):
         comments: List[EventComment] = []
         created_count: int = 0
 
-        # Calculate splits
         top_level_count = int(total_count * (1 - reply_ratio))
         reply_count = total_count - top_level_count
 
-        # Create top-level comments
         for _ in range(top_level_count):
             event = random_choice(events)
 
-            # Get participants for this event
             participants = EventParticipant.objects.filter(event=event).select_related('user')
             potential_commenters = [p.user for p in participants] + [event.organizer]
 
@@ -121,7 +117,6 @@ class Command(BaseSeederCommand):
             comments.append(comment)
             created_count += 1
 
-        # Create replies
         for _ in range(reply_count):
             if not comments:
                 break
@@ -129,7 +124,6 @@ class Command(BaseSeederCommand):
             parent_comment = random_choice(comments)
             event = parent_comment.event
 
-            # Get participants for this event
             participants = EventParticipant.objects.filter(event=event).select_related('user')
             potential_commenters = [p.user for p in participants] + [event.organizer]
 

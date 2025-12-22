@@ -51,7 +51,6 @@ class Command(BaseSeederCommand):
         Returns:
             Number of events created.
         """
-        # Check dependencies
         self.check_dependencies({
             'User': User,
             'Country': Country,
@@ -119,8 +118,6 @@ class Command(BaseSeederCommand):
             organizer = random_choice(users)
             city = random_choice(cities)
 
-            # Determine event date and status
-            # 50% future (published), 30% recent past (completed), 20% old past (completed)
             date_type = weighted_choice(
                 ['future', 'recent_past', 'old_past'],
                 [5, 3, 2]
@@ -132,7 +129,7 @@ class Command(BaseSeederCommand):
             elif date_type == 'recent_past':
                 event_date = past_date(1, 30)
                 status = EVENT_STATUS_COMPLETED
-            else:  # old_past
+            else:
                 event_date = past_date(31, 365)
                 status = EVENT_STATUS_COMPLETED
 
@@ -151,7 +148,6 @@ class Command(BaseSeederCommand):
                 city=city,
             )
 
-            # Assign 1-3 random categories
             event_categories = random_sample(categories, weighted_choice([1, 2, 3], [2, 5, 3]))
             event.categories.set(event_categories)
 

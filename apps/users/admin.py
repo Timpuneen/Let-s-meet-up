@@ -16,7 +16,6 @@ from import_export.admin import ImportExportModelAdmin
 from .models import User
 
 
-# Named tuples for grouped constants - better organization and type safety
 class AdminColors(NamedTuple):
     """Color constants for admin UI styling."""
     link: str = '#8b5cf6'
@@ -62,13 +61,11 @@ class AdminLabels(NamedTuple):
     never: str = 'Never'
 
 
-# Instantiate named tuples
 COLORS = AdminColors()
 BADGE = BadgeStyles()
 STATS = StatsStyles()
 LABELS = AdminLabels()
 
-# Simple constants that don't need grouping
 LINK_STYLE_TEMPLATE = 'color:{};font-weight:500;'
 HAS_COUNT_THRESHOLD = 0
 

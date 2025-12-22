@@ -20,7 +20,6 @@ from .serializers import (
 )
 
 
-# Action constants
 ACTION_LIST: str = 'list'
 ACTION_RETRIEVE: str = 'retrieve'
 

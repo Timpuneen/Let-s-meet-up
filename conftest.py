@@ -4,13 +4,11 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.users.models import User
-from apps.events.models import Event, EVENT_STATUS_PUBLISHED
-from apps.categories.models import Category
 from apps.geography.models import Country, City
-from apps.participants.models import EventParticipant, PARTICIPANT_STATUS_ACCEPTED
+from apps.categories.models import Category
 
 
-#USER
+# API CLIENT
 
 @pytest.fixture
 def api_client():
@@ -22,6 +20,8 @@ def api_client():
     """
     return APIClient()
 
+
+# USERS
 
 @pytest.fixture
 def user(db):
@@ -35,6 +35,21 @@ def user(db):
         email='testuser@example.com',
         name='Test User',
         password='testpass123'
+    )
+
+
+@pytest.fixture
+def admin_user(db):
+    """
+    Fixture that creates an admin/superuser in the database.
+    
+    Returns:
+        User: An admin user with all permissions.
+    """
+    return User.objects.create_superuser(
+        email='admin@example.com',
+        name='Admin User',
+        password='adminpass123'
     )
 
 
@@ -87,39 +102,23 @@ def another_authenticated_client(api_client, another_user):
 
 
 @pytest.fixture
-def user_data():
+def another_authenticated_client(api_client, another_user):
     """
-    Fixture that provides valid user registration data.
-    
-    Returns:
-        dict: Valid registration payload.
-    """
-    return {
-        'email': 'newuser@example.com',
-        'name': 'New User',
-        'password': 'securepass123',
-        'password_confirm': 'securepass123'
-    }
-
-
-@pytest.fixture
-def login_data(user):
-    """
-    Fixture that provides valid login credentials.
+    Fixture that provides another authenticated API client.
     
     Args:
-        user: The user fixture.
+        api_client: The base API client.
+        another_user: The user to authenticate.
     
     Returns:
-        dict: Valid login credentials.
+        APIClient: API client authenticated as another user.
     """
-    return {
-        'email': user.email,
-        'password': 'testpass123'
-    }
+    client = APIClient()
+    client.force_authenticate(user=another_user)
+    return client
 
 
-#GEOGRAPHY
+# GEOGRAPHY
 
 @pytest.fixture
 def country(db):
@@ -152,7 +151,7 @@ def city(db, country):
     )
 
 
-#CATEGORY
+# CATEGORY
 
 @pytest.fixture
 def category(db):
@@ -180,118 +179,3 @@ def another_category(db):
         name='Sports',
         slug='sports'
     )
-
-
-#EVENT
-
-@pytest.fixture
-def event(db, user, city, category):
-    """
-    Fixture that creates a test event.
-    
-    Args:
-        user: User fixture (organizer).
-        city: City fixture.
-        category: Category fixture.
-    
-    Returns:
-        Event: A test event.
-    """
-    event = Event.objects.create(
-        title='Test Event',
-        description='This is a test event description',
-        address='123 Test Street',
-        date=timezone.now() + timedelta(days=7),
-        status=EVENT_STATUS_PUBLISHED,
-        max_participants=10,
-        organizer=user,
-        country=city.country,
-        city=city
-    )
-    event.categories.add(category)
-    return event
-
-
-@pytest.fixture
-def past_event(db, user, city):
-    """
-    Fixture that creates a past event.
-    
-    Args:
-        user: User fixture (organizer).
-        city: City fixture.
-    
-    Returns:
-        Event: A past event.
-    """
-    return Event.objects.create(
-        title='Past Event',
-        description='This event has already happened',
-        address='456 Past Lane',
-        date=timezone.now() - timedelta(days=7),
-        status=EVENT_STATUS_PUBLISHED,
-        organizer=user,
-        country=city.country,
-        city=city
-    )
-
-
-@pytest.fixture
-def full_event(db, user, city):
-    """
-    Fixture that creates a full event (max capacity reached).
-    
-    Args:
-        user: User fixture (organizer).
-        city: City fixture.
-    
-    Returns:
-        Event: A full event.
-    """
-    event = Event.objects.create(
-        title='Full Event',
-        description='This event is at full capacity',
-        address='789 Full Road',
-        date=timezone.now() + timedelta(days=7),
-        status=EVENT_STATUS_PUBLISHED,
-        max_participants=1,
-        organizer=user,
-        country=city.country,
-        city=city
-    )
-    other_user = User.objects.create_user(
-        email='participant@example.com',
-        name='Participant',
-        password='testpass123'
-    )
-    EventParticipant.objects.create(
-        event=event,
-        user=other_user,
-        status=PARTICIPANT_STATUS_ACCEPTED
-    )
-    return event
-
-
-@pytest.fixture
-def event_data(city, category):
-    """
-    Fixture that provides valid event creation data.
-    
-    Args:
-        city: City fixture.
-        category: Category fixture.
-    
-    Returns:
-        dict: Valid event creation payload.
-    """
-    return {
-        'title': 'New Test Event',
-        'description': 'A brand new test event',
-        'address': '100 New Avenue',
-        'date': (timezone.now() + timedelta(days=14)).isoformat(),
-        'status': EVENT_STATUS_PUBLISHED,
-        'max_participants': 20,
-        'country': city.country.id,
-        'city': city.id,
-        'category_ids': [category.id]
-    }
