@@ -1,10 +1,14 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from django.conf import settings
 from django.db.models import ForeignKey, CharField, BooleanField, Index, CASCADE
 from django.core.exceptions import ValidationError
 
 from apps.abstracts.models import AbstractTimestampedModel
+
+if TYPE_CHECKING:
+    from apps.events.models import Event
+    from django.contrib.auth.models import User
 
 PARTICIPANT_STATUS_ACCEPTED = 'accepted'
 

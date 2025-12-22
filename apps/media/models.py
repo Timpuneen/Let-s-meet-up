@@ -1,10 +1,14 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from django.conf import settings
 from django.db.models import ForeignKey, CharField, TextField, BooleanField, Index, CASCADE
 from django.core.exceptions import ValidationError
 
 from apps.abstracts.models import AbstractTimestampedModel, AbstractSoftDeletableModel, SoftDeletableManager
+
+if TYPE_CHECKING:
+    from apps.events.models import Event
+    from django.contrib.auth.models import User
 
 PHOTO_URL_MAX_LENGTH = 500
 COVER_UPDATE_FIELDS = ['is_cover']
