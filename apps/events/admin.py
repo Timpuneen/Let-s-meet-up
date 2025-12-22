@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, NamedTuple
 
 from django.contrib import admin
 from django.db.models import Count, F, Q, QuerySet
@@ -19,37 +19,64 @@ from apps.participants.models import EventParticipant
 from .models import Event
 
 
-EVENT_STATUS_DRAFT = 'draft'
-EVENT_STATUS_PUBLISHED = 'published'
-EVENT_STATUS_CANCELLED = 'cancelled'
-EVENT_STATUS_COMPLETED = 'completed'
+# Named tuples for grouped constants - better organization and maintainability
+class EventStatuses(NamedTuple):
+    """Event status constants."""
+    draft: str = 'draft'
+    published: str = 'published'
+    cancelled: str = 'cancelled'
+    completed: str = 'completed'
 
-INVITATION_STATUS_PENDING = 'pending'
-INVITATION_STATUS_ACCEPTED = 'accepted'
-INVITATION_STATUS_REJECTED = 'rejected'
 
-FILTER_VALUE_UPCOMING = 'upcoming'
-FILTER_VALUE_ONGOING = 'ongoing'
-FILTER_VALUE_PAST = 'past'
-FILTER_VALUE_FULL = 'full'
+class InvitationStatuses(NamedTuple):
+    """Invitation status constants."""
+    pending: str = 'pending'
+    accepted: str = 'accepted'
+    rejected: str = 'rejected'
 
-ADMIN_URL_USER_CHANGE = '/admin/users/user/{}/change/'
-ADMIN_URL_PARTICIPANTS = '/admin/participants/eventparticipant/?event__id__exact={}'
-ADMIN_URL_INVITATIONS_PENDING = '/admin/invitations/eventinvitation/?event__id__exact={}&status__exact=pending'
 
-COLOR_SUCCESS = '#22c55e'
-COLOR_WARNING = '#f59e0b'
-COLOR_DANGER = '#ef4444'
-COLOR_INFO = '#3b82f6'
-COLOR_PRIMARY = '#8b5cf6'
-COLOR_GRAY = '#6b7280'
-COLOR_GRAY_LIGHT = '#9ca3af'
+class FilterValues(NamedTuple):
+    """Filter value constants for admin filters."""
+    upcoming: str = 'upcoming'
+    ongoing: str = 'ongoing'
+    past: str = 'past'
+    full: str = 'full'
 
-CAPACITY_THRESHOLD_HIGH = 90
-CAPACITY_THRESHOLD_MEDIUM = 70
 
+class AdminUrls(NamedTuple):
+    """Admin URL templates."""
+    user_change: str = '/admin/users/user/{}/change/'
+    participants: str = '/admin/participants/eventparticipant/?event__id__exact={}'
+    invitations_pending: str = '/admin/invitations/eventinvitation/?event__id__exact={}&status__exact=pending'
+
+
+class AdminColors(NamedTuple):
+    """Color constants for admin UI styling."""
+    success: str = '#22c55e'
+    warning: str = '#f59e0b'
+    danger: str = '#ef4444'
+    info: str = '#3b82f6'
+    primary: str = '#8b5cf6'
+    gray: str = '#6b7280'
+    gray_light: str = '#9ca3af'
+
+
+class CapacityThresholds(NamedTuple):
+    """Capacity threshold constants."""
+    high: int = 90
+    medium: int = 70
+
+
+# Instantiate named tuples
+EVENT_STATUS = EventStatuses()
+INVITATION_STATUS = InvitationStatuses()
+FILTER_VALUE = FilterValues()
+ADMIN_URL = AdminUrls()
+COLORS = AdminColors()
+CAPACITY_THRESHOLD = CapacityThresholds()
+
+# Simple constants that don't need grouping
 PARTICIPANTS_PREVIEW_LIMIT = 10
-
 DATE_FORMAT = '%b %d, %Y %H:%M'
 
 
@@ -125,10 +152,10 @@ class StatusFilter(admin.SimpleListFilter):
             List[tuple]: Filter choices.
         """
         return (
-            (FILTER_VALUE_UPCOMING, _('Upcoming Events')),
-            (FILTER_VALUE_ONGOING, _('Ongoing Events')),
-            (FILTER_VALUE_PAST, _('Past Events')),
-            (FILTER_VALUE_FULL, _('Full Events')),
+            (FILTER_VALUE.upcoming, _('Upcoming Events')),
+            (FILTER_VALUE.ongoing, _('Ongoing Events')),
+            (FILTER_VALUE.past, _('Past Events')),
+            (FILTER_VALUE.full, _('Full Events')),
         )
 
     def queryset(self, request: HttpRequest, queryset: QuerySet[Event]) -> Optional[QuerySet[Event]]:
@@ -144,13 +171,13 @@ class StatusFilter(admin.SimpleListFilter):
         """
         now = timezone.now()
         
-        if self.value() == FILTER_VALUE_UPCOMING:
-            return queryset.filter(date__gt=now, status=EVENT_STATUS_PUBLISHED)
-        if self.value() == FILTER_VALUE_ONGOING:
-            return queryset.filter(date__lte=now, status=EVENT_STATUS_PUBLISHED)
-        if self.value() == FILTER_VALUE_PAST:
-            return queryset.filter(status=EVENT_STATUS_COMPLETED)
-        if self.value() == FILTER_VALUE_FULL:
+        if self.value() == FILTER_VALUE.upcoming:
+            return queryset.filter(date__gt=now, status=EVENT_STATUS.published)
+        if self.value() == FILTER_VALUE.ongoing:
+            return queryset.filter(date__lte=now, status=EVENT_STATUS.published)
+        if self.value() == FILTER_VALUE.past:
+            return queryset.filter(status=EVENT_STATUS.completed)
+        if self.value() == FILTER_VALUE.full:
             return queryset.annotate(
                 participants_count=Count('participants_rel')
             ).filter(
@@ -261,7 +288,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             participants_count=Count('participants_rel', distinct=True),
             invitations_pending=Count(
                 'invitations',
-                filter=Q(invitations__status=INVITATION_STATUS_PENDING),
+                filter=Q(invitations__status=INVITATION_STATUS.pending),
                 distinct=True
             ),
             comments_count=Count('comments', distinct=True),
@@ -281,10 +308,10 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         """
         now = timezone.now()
         indicator = ''
-        if obj.status == EVENT_STATUS_PUBLISHED:
-            indicator = f'<span style="color:{COLOR_SUCCESS};">●</span> ' if obj.date > now else f'<span style="color:{COLOR_WARNING};">●</span> '
-        elif obj.status == EVENT_STATUS_CANCELLED:
-            indicator = f'<span style="color:{COLOR_DANGER};">●</span> '
+        if obj.status == EVENT_STATUS.published:
+            indicator = f'<span style="color:{COLORS.success};">●</span> ' if obj.date > now else f'<span style="color:{COLORS.warning};">●</span> '
+        elif obj.status == EVENT_STATUS.cancelled:
+            indicator = f'<span style="color:{COLORS.danger};">●</span> '
         return [mark_safe(f'{indicator}<strong>{obj.title}</strong>')]
 
     @display(description=_('Organizer'), ordering='organizer__email')
@@ -300,8 +327,8 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         """
         return format_html(
             '<a href="{}" style="color:{};">{}</a>',
-            ADMIN_URL_USER_CHANGE.format(obj.organizer.pk),
-            COLOR_PRIMARY,
+            ADMIN_URL.user_change.format(obj.organizer.pk),
+            COLORS.primary,
             obj.organizer.name or obj.organizer.email
         )
 
@@ -323,7 +350,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             parts.append(obj.country.name)
         if parts:
             return format_html('📍 {}', ', '.join(parts))
-        return format_html('<span style="color:{};">No location</span>', COLOR_GRAY_LIGHT)
+        return format_html('<span style="color:{};">No location</span>', COLORS.gray_light)
 
     @display(description=_('Date & Time'), ordering='date')
     def event_date(self, obj: Event) -> SafeString:
@@ -337,7 +364,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             SafeString: HTML formatted date.
         """
         now = timezone.now()
-        color = COLOR_SUCCESS if obj.date > now else COLOR_GRAY_LIGHT
+        color = COLORS.success if obj.date > now else COLORS.gray_light
         return format_html(
             '<span style="color:{};">{}</span>',
             color,
@@ -356,14 +383,14 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             SafeString: HTML formatted status badge.
         """
         status_colors = {
-            EVENT_STATUS_DRAFT: COLOR_GRAY,
-            EVENT_STATUS_PUBLISHED: COLOR_SUCCESS,
-            EVENT_STATUS_CANCELLED: COLOR_DANGER,
-            EVENT_STATUS_COMPLETED: COLOR_INFO
+            EVENT_STATUS.draft: COLORS.gray,
+            EVENT_STATUS.published: COLORS.success,
+            EVENT_STATUS.cancelled: COLORS.danger,
+            EVENT_STATUS.completed: COLORS.info
         }
         return format_html(
             '<span style="background:{};color:white;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:500;">{}</span>',
-            status_colors.get(obj.status, COLOR_GRAY),
+            status_colors.get(obj.status, COLORS.gray),
             obj.get_status_display()
         )
 
@@ -380,14 +407,14 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         """
         if obj.max_participants:
             percentage = (obj.participants_count / obj.max_participants * 100)
-            color = COLOR_DANGER if percentage >= CAPACITY_THRESHOLD_HIGH else COLOR_WARNING if percentage >= CAPACITY_THRESHOLD_MEDIUM else COLOR_SUCCESS
+            color = COLORS.danger if percentage >= CAPACITY_THRESHOLD.high else COLORS.warning if percentage >= CAPACITY_THRESHOLD.medium else COLORS.success
             return format_html(
                 '<span style="color:{};">{} / {}</span>',
                 color,
                 obj.participants_count,
                 obj.max_participants
             )
-        return format_html('<span style="color:{};">Unlimited</span>', COLOR_GRAY)
+        return format_html('<span style="color:{};">Unlimited</span>', COLORS.gray)
 
     @display(description=_('Participants'), ordering='participants_count')
     def participants_count_display(self, obj: Event) -> SafeString:
@@ -404,11 +431,11 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         if count > 0:
             return format_html(
                 '<a href="{}" style="color:{};font-weight:500;">👥 {} members</a>',
-                ADMIN_URL_PARTICIPANTS.format(obj.pk),
-                COLOR_PRIMARY,
+                ADMIN_URL.participants.format(obj.pk),
+                COLORS.primary,
                 count
             )
-        return format_html('<span style="color:{};">No participants</span>', COLOR_GRAY_LIGHT)
+        return format_html('<span style="color:{};">No participants</span>', COLORS.gray_light)
 
     @display(description=_('Invitations'))
     def invitations_count_display(self, obj: Event) -> SafeString:
@@ -425,11 +452,11 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
         if pending > 0:
             return format_html(
                 '<a href="{}" style="color:{};font-weight:500;">📨 {} pending</a>',
-                ADMIN_URL_INVITATIONS_PENDING.format(obj.pk),
-                COLOR_WARNING,
+                ADMIN_URL.invitations_pending.format(obj.pk),
+                COLORS.warning,
                 pending
             )
-        return format_html('<span style="color:{};">No pending</span>', COLOR_GRAY_LIGHT)
+        return format_html('<span style="color:{};">No pending</span>', COLORS.gray_light)
 
     @display(description=_('Categories'))
     def categories_display(self, obj: Event) -> SafeString:
@@ -449,7 +476,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
                 for cat in categories
             ])
             return format_html(badges)
-        return format_html('<span style="color:{};">No categories</span>', COLOR_GRAY_LIGHT)
+        return format_html('<span style="color:{};">No categories</span>', COLORS.gray_light)
 
     @display(description=_('Event Statistics'))
     def event_statistics(self, obj: Event) -> SafeString:
@@ -473,46 +500,46 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             <h3 style="margin:0 0 15px 0;color:#374151;font-size:14px;">Event Overview</h3>
             <table style="width:100%;border-collapse:collapse;">
                 <tr style="border-bottom:2px solid #e5e7eb;">
-                    <td colspan="2" style="padding:8px 0;color:{COLOR_GRAY};font-weight:600;">Participants</td>
+                    <td colspan="2" style="padding:8px 0;color:{COLORS.gray};font-weight:600;">Participants</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Total Members:</strong></td>
-                    <td style="text-align:right;color:{COLOR_SUCCESS};font-weight:500;">{obj.participants_count}</td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Total Members:</strong></td>
+                    <td style="text-align:right;color:{COLORS.success};font-weight:500;">{obj.participants_count}</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Admins:</strong></td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Admins:</strong></td>
                     <td style="text-align:right;color:#111827;">{obj.participants_rel.filter(is_admin=True).count()}</td>
                 </tr>
                 <tr style="border-bottom:2px solid #e5e7eb;">
-                    <td colspan="2" style="padding:8px 0;color:{COLOR_GRAY};font-weight:600;">Invitations</td>
+                    <td colspan="2" style="padding:8px 0;color:{COLORS.gray};font-weight:600;">Invitations</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Pending:</strong></td>
-                    <td style="text-align:right;color:{COLOR_WARNING};font-weight:500;">{obj.invitations.filter(status=INVITATION_STATUS_PENDING).count()}</td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Pending:</strong></td>
+                    <td style="text-align:right;color:{COLORS.warning};font-weight:500;">{obj.invitations.filter(status=INVITATION_STATUS.pending).count()}</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Accepted:</strong></td>
-                    <td style="text-align:right;color:{COLOR_SUCCESS};">{obj.invitations.filter(status=INVITATION_STATUS_ACCEPTED).count()}</td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Accepted:</strong></td>
+                    <td style="text-align:right;color:{COLORS.success};">{obj.invitations.filter(status=INVITATION_STATUS.accepted).count()}</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Rejected:</strong></td>
-                    <td style="text-align:right;color:{COLOR_DANGER};">{obj.invitations.filter(status=INVITATION_STATUS_REJECTED).count()}</td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Rejected:</strong></td>
+                    <td style="text-align:right;color:{COLORS.danger};">{obj.invitations.filter(status=INVITATION_STATUS.rejected).count()}</td>
                 </tr>
                 <tr style="border-top:1px solid #e5e7eb;">
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Comments:</strong></td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Comments:</strong></td>
                     <td style="text-align:right;color:#111827;">{obj.comments_count}</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Photos:</strong></td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Photos:</strong></td>
                     <td style="text-align:right;color:#111827;">{obj.photos_count}</td>
                 </tr>
                 <tr>
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Categories:</strong></td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Categories:</strong></td>
                     <td style="text-align:right;color:#111827;">{obj.categories.count()}</td>
                 </tr>
                 <tr style="border-top:2px solid #e5e7eb;">
-                    <td style="padding:8px 0;color:{COLOR_GRAY};"><strong>Days Until Event:</strong></td>
-                    <td style="text-align:right;color:{COLOR_PRIMARY};font-weight:600;">{days_until if days_until > 0 else 'Past Event'}</td>
+                    <td style="padding:8px 0;color:{COLORS.gray};"><strong>Days Until Event:</strong></td>
+                    <td style="text-align:right;color:{COLORS.primary};font-weight:600;">{days_until if days_until > 0 else 'Past Event'}</td>
                 </tr>
             </table>
         </div>
@@ -539,7 +566,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             return "No participants yet"
         
         rows = ''.join([
-            f'<tr><td style="padding:6px 0;">{p.user.name or p.user.email}</td><td style="text-align:right;"><span style="background:{COLOR_INFO if p.is_admin else "#e5e7eb"};color:{"white" if p.is_admin else "#374151"};padding:2px 8px;border-radius:4px;font-size:10px;">{"Admin" if p.is_admin else "Member"}</span></td></tr>'
+            f'<tr><td style="padding:6px 0;">{p.user.name or p.user.email}</td><td style="text-align:right;"><span style="background:{COLORS.info if p.is_admin else "#e5e7eb"};color:{"white" if p.is_admin else "#374151"};padding:2px 8px;border-radius:4px;font-size:10px;">{"Admin" if p.is_admin else "Member"}</span></td></tr>'
             for p in participants
         ])
         
@@ -548,7 +575,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             <table style="width:100%;">
                 {rows}
             </table>
-            {f'<p style="margin:10px 0 0 0;color:{COLOR_GRAY};font-size:12px;">... and {obj.participants_count - PARTICIPANTS_PREVIEW_LIMIT} more</p>' if obj.participants_count > PARTICIPANTS_PREVIEW_LIMIT else ''}
+            {f'<p style="margin:10px 0 0 0;color:{COLORS.gray};font-size:12px;">... and {obj.participants_count - PARTICIPANTS_PREVIEW_LIMIT} more</p>' if obj.participants_count > PARTICIPANTS_PREVIEW_LIMIT else ''}
         </div>
         """
         return format_html(html)
@@ -562,7 +589,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             request: The HTTP request object.
             queryset: Selected events queryset.
         """
-        updated = queryset.update(status=EVENT_STATUS_PUBLISHED)
+        updated = queryset.update(status=EVENT_STATUS.published)
         self.message_user(request, f'{updated} events published successfully.')
 
     @admin.action(description=_('Cancel selected events'))
@@ -574,7 +601,7 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             request: The HTTP request object.
             queryset: Selected events queryset.
         """
-        updated = queryset.update(status=EVENT_STATUS_CANCELLED)
+        updated = queryset.update(status=EVENT_STATUS.cancelled)
         self.message_user(request, f'{updated} events cancelled.')
 
     @admin.action(description=_('Mark as completed'))
@@ -586,5 +613,5 @@ class EventAdmin(ImportExportModelAdmin, ModelAdmin):
             request: The HTTP request object.
             queryset: Selected events queryset.
         """
-        updated = queryset.update(status=EVENT_STATUS_COMPLETED)
+        updated = queryset.update(status=EVENT_STATUS.completed)
         self.message_user(request, f'{updated} events marked as completed.')

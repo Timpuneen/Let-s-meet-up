@@ -1,4 +1,4 @@
-from typing import Any, Tuple, List
+from typing import Any, Tuple, List, NamedTuple
 from django.contrib.admin import SimpleListFilter, register, action
 from django.db.models import Count, Q
 from django.db.models.query import QuerySet
@@ -15,38 +15,62 @@ from import_export.admin import ImportExportModelAdmin
 
 from .models import User
 
-LINK_COLOR = '#8b5cf6'
-MUTED_COLOR = '#9ca3af'
-GREY_COLOR = '#6b7280'
-ACTIVE_COLOR = '#22c55e'
-INACTIVE_COLOR = '#ef4444'
-BADGE_SUPERUSER_BG = INACTIVE_COLOR
-BADGE_STAFF_BG = LINK_COLOR
-BADGE_PADDING = '2px 8px'
-BADGE_BORDER_RADIUS = '4px'
-BADGE_FONT_SIZE = '10px'
-BADGE_MARGIN_LEFT = '8px'
-BADGE_TEMPLATE = '<span style="background:{bg};color:white;padding:{padding};border-radius:{radius};font-size:{font_size};margin-left:{margin};">{label}</span>'
-BADGE_SUPERUSER_LABEL = 'SUPERUSER'
-BADGE_STAFF_LABEL = 'STAFF'
+
+# Named tuples for grouped constants - better organization and type safety
+class AdminColors(NamedTuple):
+    """Color constants for admin UI styling."""
+    link: str = '#8b5cf6'
+    muted: str = '#9ca3af'
+    grey: str = '#6b7280'
+    active: str = '#22c55e'
+    inactive: str = '#ef4444'
+
+
+class BadgeStyles(NamedTuple):
+    """Badge styling constants."""
+    superuser_bg: str = '#ef4444'
+    staff_bg: str = '#8b5cf6'
+    padding: str = '2px 8px'
+    border_radius: str = '4px'
+    font_size: str = '10px'
+    margin_left: str = '8px'
+    template: str = '<span style="background:{bg};color:white;padding:{padding};border-radius:{radius};font-size:{font_size};margin-left:{margin};">{label}</span>'
+    superuser_label: str = 'SUPERUSER'
+    staff_label: str = 'STAFF'
+
+
+class StatsStyles(NamedTuple):
+    """Statistics panel styling constants."""
+    bg: str = '#f9fafb'
+    container_padding: str = '15px'
+    border_color: str = '#e5e7eb'
+    heading_color: str = '#374151'
+    heading_font_size: str = '14px'
+    heading_margin: str = '0 0 15px 0'
+    cell_padding: str = '8px 0'
+    cell_text_color: str = '#111827'
+    muted_color: str = '#6b7280'
+    separator_width: str = '2px'
+    border_radius: str = '8px'
+    border_width: str = '1px'
+
+
+class AdminLabels(NamedTuple):
+    """Label constants for admin UI."""
+    zero_events: str = '0 events'
+    zero_friends: str = '0 friends'
+    never: str = 'Never'
+
+
+# Instantiate named tuples
+COLORS = AdminColors()
+BADGE = BadgeStyles()
+STATS = StatsStyles()
+LABELS = AdminLabels()
+
+# Simple constants that don't need grouping
 LINK_STYLE_TEMPLATE = 'color:{};font-weight:500;'
 HAS_COUNT_THRESHOLD = 0
-
-STATS_BG = '#f9fafb'
-STATS_CONTAINER_PADDING = '15px'
-STATS_BORDER_COLOR = '#e5e7eb'
-STATS_HEADING_COLOR = '#374151'
-STATS_HEADING_FONT_SIZE = '14px'
-STATS_HEADING_MARGIN = '0 0 15px 0'
-STATS_CELL_PADDING = '8px 0'
-STATS_CELL_TEXT_COLOR = '#111827'
-STATS_MUTED_COLOR = GREY_COLOR
-STATS_SEPARATOR_WIDTH = '2px'
-STATS_BORDER_RADIUS = '8px'
-STATS_BORDER_WIDTH = '1px'
-ZERO_EVENTS_LABEL = '0 events'
-ZERO_FRIENDS_LABEL = '0 friends'
-NEVER_LABEL = 'Never'
 
 
 class ActiveUsersFilter(SimpleListFilter):
@@ -227,16 +251,16 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
         """Display the user's email with badges indicating elevated permissions."""
         badges: List[str] = []
         if obj.is_superuser:
-            badges.append(BADGE_TEMPLATE.format(
-                bg=BADGE_SUPERUSER_BG, padding=BADGE_PADDING,
-                radius=BADGE_BORDER_RADIUS, font_size=BADGE_FONT_SIZE,
-                margin=BADGE_MARGIN_LEFT, label=BADGE_SUPERUSER_LABEL
+            badges.append(BADGE.template.format(
+                bg=BADGE.superuser_bg, padding=BADGE.padding,
+                radius=BADGE.border_radius, font_size=BADGE.font_size,
+                margin=BADGE.margin_left, label=BADGE.superuser_label
             ))
         elif obj.is_staff:
-            badges.append(BADGE_TEMPLATE.format(
-                bg=BADGE_STAFF_BG, padding=BADGE_PADDING,
-                radius=BADGE_BORDER_RADIUS, font_size=BADGE_FONT_SIZE,
-                margin=BADGE_MARGIN_LEFT, label=BADGE_STAFF_LABEL
+            badges.append(BADGE.template.format(
+                bg=BADGE.staff_bg, padding=BADGE.padding,
+                radius=BADGE.border_radius, font_size=BADGE.font_size,
+                margin=BADGE.margin_left, label=BADGE.staff_label
             ))
 
         return [mark_safe(f'<strong>{obj.email}</strong>{"".join(badges)}')]
@@ -245,16 +269,16 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
     def activity_status(self, obj: User) -> str:
         """Display activity status with color."""
         if obj.is_active:
-            return format_html('<span style="color:{};">● Active</span>', ACTIVE_COLOR)
-        return format_html('<span style="color:{};">● Inactive</span>', INACTIVE_COLOR)
+            return format_html('<span style="color:{};">● Active</span>', COLORS.active)
+        return format_html('<span style="color:{};">● Inactive</span>', COLORS.inactive)
 
     @display(description=_('Privacy'), ordering='invitation_privacy')
     def invitation_privacy_badge(self, obj: User) -> str:
         """Display invitation privacy setting with an icon and color."""
         colors = {
-            'everyone': ACTIVE_COLOR,
+            'everyone': COLORS.active,
             'friends': '#f59e0b',
-            'none': INACTIVE_COLOR,
+            'none': COLORS.inactive,
         }
         icons = {
             'everyone': '🌍',
@@ -263,7 +287,7 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
         }
         return format_html(
             '<span style="color:{};">{} {}</span>',
-            colors.get(obj.invitation_privacy, GREY_COLOR),
+            colors.get(obj.invitation_privacy, COLORS.grey),
             icons.get(obj.invitation_privacy, ''),
             obj.get_invitation_privacy_display()
         )
@@ -276,10 +300,10 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
             return format_html(
                 '<a href="/admin/events/event/?organizer__id__exact={}" style="{}">{} events</a>',
                 obj.pk,
-                LINK_STYLE_TEMPLATE.format(LINK_COLOR),
+                LINK_STYLE_TEMPLATE.format(COLORS.link),
                 count
             )
-        return format_html('<span style="color:{};">{}</span>', MUTED_COLOR, ZERO_EVENTS_LABEL)
+        return format_html('<span style="color:{};">{}</span>', COLORS.muted, LABELS.zero_events)
 
     @display(description=_('Participations'), ordering='participations_count')
     def participations_count(self, obj: User) -> str:
@@ -289,10 +313,10 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
             return format_html(
                 '<a href="/admin/participants/eventparticipant/?user__id__exact={}" style="{}">{} events</a>',
                 obj.pk,
-                LINK_STYLE_TEMPLATE.format(LINK_COLOR),
+                LINK_STYLE_TEMPLATE.format(COLORS.link),
                 count
             )
-        return format_html('<span style="color:{};">{}</span>', MUTED_COLOR, ZERO_EVENTS_LABEL)
+        return format_html('<span style="color:{};">{}</span>', COLORS.muted, LABELS.zero_events)
 
     @display(description=_('Friends'), ordering='friendships_count')
     def friends_count(self, obj: User) -> str:
@@ -302,10 +326,10 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
             return format_html(
                 '<a href="/admin/friendships/friendship/?q={}" style="{}">{} friends</a>',
                 obj.email,
-                LINK_STYLE_TEMPLATE.format(LINK_COLOR),
+                LINK_STYLE_TEMPLATE.format(COLORS.link),
                 count
             )
-        return format_html('<span style="color:{};">{}</span>', MUTED_COLOR, ZERO_FRIENDS_LABEL)
+        return format_html('<span style="color:{};">{}</span>', COLORS.muted, LABELS.zero_friends)
 
     @display(description=_('Joined'), ordering='created_at')
     def joined_date(self, obj: User) -> str:
@@ -319,32 +343,32 @@ class UserAdmin(ImportExportModelAdmin, ModelAdmin):
             return "Save user to see statistics"
 
         stats_html = f"""
-        <div style="padding:{STATS_CONTAINER_PADDING};background:{STATS_BG};border-radius:{STATS_BORDER_RADIUS};border:{STATS_BORDER_WIDTH} solid {STATS_BORDER_COLOR};">
-            <h3 style="margin:{STATS_HEADING_MARGIN};color:{STATS_HEADING_COLOR};font-size:{STATS_HEADING_FONT_SIZE};">User Activity Overview</h3>
+        <div style="padding:{STATS.container_padding};background:{STATS.bg};border-radius:{STATS.border_radius};border:{STATS.border_width} solid {STATS.border_color};">
+            <h3 style="margin:{STATS.heading_margin};color:{STATS.heading_color};font-size:{STATS.heading_font_size};">User Activity Overview</h3>
             <table style="width:100%;border-collapse:collapse;">
                 <tr>
-                    <td style="padding:{STATS_CELL_PADDING};color:{STATS_MUTED_COLOR};"><strong>Organized Events:</strong></td>
-                    <td style="text-align:right;color:{STATS_CELL_TEXT_COLOR};">{obj.organized_events.count()}</td>
+                    <td style="padding:{STATS.cell_padding};color:{STATS.muted_color};"><strong>Organized Events:</strong></td>
+                    <td style="text-align:right;color:{STATS.cell_text_color};">{obj.organized_events.count()}</td>
                 </tr>
                 <tr>
-                    <td style="padding:{STATS_CELL_PADDING};color:{STATS_MUTED_COLOR};"><strong>Event Participations:</strong></td>
-                    <td style="text-align:right;color:{STATS_CELL_TEXT_COLOR};">{obj.event_participations.count()}</td>
+                    <td style="padding:{STATS.cell_padding};color:{STATS.muted_color};"><strong>Event Participations:</strong></td>
+                    <td style="text-align:right;color:{STATS.cell_text_color};">{obj.event_participations.count()}</td>
                 </tr>
                 <tr>
-                    <td style="padding:{STATS_CELL_PADDING};color:{STATS_MUTED_COLOR};"><strong>Friendships:</strong></td>
-                    <td style="text-align:right;color:{STATS_CELL_TEXT_COLOR};">{obj.sent_friendships.filter(status='accepted').count() + obj.received_friendships.filter(status='accepted').count()}</td>
+                    <td style="padding:{STATS.cell_padding};color:{STATS.muted_color};"><strong>Friendships:</strong></td>
+                    <td style="text-align:right;color:{STATS.cell_text_color};">{obj.sent_friendships.filter(status='accepted').count() + obj.received_friendships.filter(status='accepted').count()}</td>
                 </tr>
                 <tr>
-                    <td style="padding:{STATS_CELL_PADDING};color:{STATS_MUTED_COLOR};"><strong>Comments Posted:</strong></td>
-                    <td style="text-align:right;color:{STATS_CELL_TEXT_COLOR};">{obj.comments.count()}</td>
+                    <td style="padding:{STATS.cell_padding};color:{STATS.muted_color};"><strong>Comments Posted:</strong></td>
+                    <td style="text-align:right;color:{STATS.cell_text_color};">{obj.comments.count()}</td>
                 </tr>
                 <tr>
-                    <td style="padding:{STATS_CELL_PADDING};color:{STATS_MUTED_COLOR};"><strong>Photos Uploaded:</strong></td>
-                    <td style="text-align:right;color:{STATS_CELL_TEXT_COLOR};">{obj.uploaded_photos.count()}</td>
+                    <td style="padding:{STATS.cell_padding};color:{STATS.muted_color};"><strong>Photos Uploaded:</strong></td>
+                    <td style="text-align:right;color:{STATS.cell_text_color};">{obj.uploaded_photos.count()}</td>
                 </tr>
-                <tr style="border-top:{STATS_SEPARATOR_WIDTH} solid {STATS_BORDER_COLOR};">
-                    <td style="padding:{STATS_CELL_PADDING};color:{STATS_MUTED_COLOR};"><strong>Last Login:</strong></td>
-                    <td style="text-align:right;color:{STATS_CELL_TEXT_COLOR};">{obj.last_login.strftime('%b %d, %Y %H:%M') if obj.last_login else NEVER_LABEL}</td>
+                <tr style="border-top:{STATS.separator_width} solid {STATS.border_color};">
+                    <td style="padding:{STATS.cell_padding};color:{STATS.muted_color};"><strong>Last Login:</strong></td>
+                    <td style="text-align:right;color:{STATS.cell_text_color};">{obj.last_login.strftime('%b %d, %Y %H:%M') if obj.last_login else LABELS.never}</td>
                 </tr>
             </table>
         </div>
