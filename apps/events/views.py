@@ -90,7 +90,7 @@ class EventViewSet(ViewSet):
         summary='List all published events',
         description='Returns a list of all published upcoming events with optimized queries.',
         responses={
-            200: OpenApiResponse(response=EventListSerializer(many=True), description='List of events'),
+            status.HTTP_200_OK: OpenApiResponse(response=EventListSerializer(many=True), description='List of events'),
         },
     )
     def list(self, request: Request) -> Response:
@@ -121,8 +121,8 @@ class EventViewSet(ViewSet):
         summary='Get event details',
         description='Returns detailed information about a specific event.',
         responses={
-            200: OpenApiResponse(response=EventSerializer, description='Event details'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_200_OK: OpenApiResponse(response=EventSerializer, description='Event details'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     def retrieve(self, request: Request, pk: int) -> Response:
@@ -146,9 +146,9 @@ class EventViewSet(ViewSet):
         description='Create a new event. The authenticated user will be set as the organizer.',
         request=EventCreateSerializer,
         responses={
-            201: OpenApiResponse(response=EventSerializer, description='Event created successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
+            status.HTTP_201_CREATED: OpenApiResponse(response=EventSerializer, description='Event created successfully'),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
         },
     )
     def create(self, request: Request) -> Response:
@@ -174,11 +174,11 @@ class EventViewSet(ViewSet):
         description='Update event fields. Only the organizer can update the event.',
         request=EventUpdateSerializer,
         responses={
-            200: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Not the organizer'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_200_OK: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description='Not the organizer'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     def update(self, request: Request, pk: int) -> Response:
@@ -218,11 +218,11 @@ class EventViewSet(ViewSet):
         description='Partially update event fields. Only the organizer can update the event.',
         request=EventUpdateSerializer,
         responses={
-            200: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
-            400: OpenApiResponse(description='Invalid input data'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Not the organizer'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_200_OK: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description='Not the organizer'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     def partial_update(self, request: Request, pk: int) -> Response:
@@ -243,10 +243,10 @@ class EventViewSet(ViewSet):
         summary='Delete event (soft delete)',
         description='Soft delete an event. Only the organizer can delete the event.',
         responses={
-            204: OpenApiResponse(description='Event deleted successfully'),
-            401: OpenApiResponse(description='Authentication required'),
-            403: OpenApiResponse(description='Not the organizer'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_204_NO_CONTENT: OpenApiResponse(description='Event deleted successfully'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description='Not the organizer'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     def destroy(self, request: Request, pk: int) -> Response:
@@ -277,10 +277,10 @@ class EventViewSet(ViewSet):
         description='Register the authenticated user as a participant for the event. '
                     'Creates a pending participation request that may need approval.',
         responses={
-            201: OpenApiResponse(description='Registration successful'),
-            400: OpenApiResponse(description='Cannot register (already registered, own event, or event full)'),
-            401: OpenApiResponse(description='Authentication required'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_201_CREATED: OpenApiResponse(description='Registration successful'),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Cannot register (already registered, own event, or event full)'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
@@ -332,10 +332,10 @@ class EventViewSet(ViewSet):
         summary='Cancel event registration',
         description='Remove the authenticated user from the list of participants for the event.',
         responses={
-            200: OpenApiResponse(description='Registration cancelled successfully'),
-            400: OpenApiResponse(description='Not registered for this event'),
-            401: OpenApiResponse(description='Authentication required'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_200_OK: OpenApiResponse(description='Registration cancelled successfully'),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Not registered for this event'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
@@ -373,8 +373,8 @@ class EventViewSet(ViewSet):
         summary='Get my organized events',
         description='Returns a list of all events organized by the authenticated user.',
         responses={
-            200: OpenApiResponse(response=EventListSerializer(many=True), description='List of organized events'),
-            401: OpenApiResponse(description='Authentication required'),
+            status.HTTP_200_OK: OpenApiResponse(response=EventListSerializer(many=True), description='List of organized events'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
         },
     )
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
@@ -403,8 +403,8 @@ class EventViewSet(ViewSet):
         summary='Get my registered events',
         description='Returns a list of all events the authenticated user is registered for as a participant.',
         responses={
-            200: OpenApiResponse(response=EventListSerializer(many=True), description='List of registered events'),
-            401: OpenApiResponse(description='Authentication required'),
+            status.HTTP_200_OK: OpenApiResponse(response=EventListSerializer(many=True), description='List of registered events'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
         },
     )
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
@@ -447,12 +447,12 @@ class EventViewSet(ViewSet):
             ),
         ],
         responses={
-            200: OpenApiResponse(
+            status.HTTP_200_OK: OpenApiResponse(
                 response=CommentListSerializer(many=True),
                 description='List of comments for the event'
             ),
-            401: OpenApiResponse(description='Authentication required'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
@@ -499,12 +499,12 @@ class EventViewSet(ViewSet):
             ),
         ],
         responses={
-            200: OpenApiResponse(
+            status.HTTP_200_OK: OpenApiResponse(
                 response=PhotoListSerializer(many=True),
                 description='List of photos for the event'
             ),
-            401: OpenApiResponse(description='Authentication required'),
-            404: OpenApiResponse(description='Event not found'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
         },
     )
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])

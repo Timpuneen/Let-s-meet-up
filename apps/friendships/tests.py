@@ -172,7 +172,7 @@ class TestFriendshipResponse:
         })
         
         print(f"DEBUG: Response status = {response.status_code}")
-        if response.status_code == 404:
+        if response.status_code == status.HTTP_404_NOT_FOUND:
             print(f"DEBUG: Response data = {response.data}")
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
