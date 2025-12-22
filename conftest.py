@@ -1,14 +1,10 @@
 import pytest
-from datetime import timedelta
-from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.users.models import User
 from apps.geography.models import Country, City
 from apps.categories.models import Category
 
-
-# API CLIENT
 
 @pytest.fixture
 def api_client():
@@ -20,8 +16,6 @@ def api_client():
     """
     return APIClient()
 
-
-# USERS
 
 @pytest.fixture
 def user(db):
@@ -118,8 +112,6 @@ def another_authenticated_client(api_client, another_user):
     return client
 
 
-# GEOGRAPHY
-
 @pytest.fixture
 def country(db):
     """
@@ -150,8 +142,6 @@ def city(db, country):
         country=country
     )
 
-
-# CATEGORY
 
 @pytest.fixture
 def category(db):
