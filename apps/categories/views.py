@@ -1,15 +1,13 @@
 from typing import List, Optional, Type
 
-from rest_framework import status
-from rest_framework.viewsets import ViewSet
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser, BasePermission
-from rest_framework.request import Request
-
-from django.shortcuts import get_object_or_404
 from django.db.models import QuerySet
-
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import status
+from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny, BasePermission, IsAdminUser, IsAuthenticated
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet
 
 from .models import Category
 from .serializers import (
@@ -38,6 +36,24 @@ class CategoryViewSet(ViewSet):
 
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
+
+    def get_object(self, pk: Optional[int]) -> Category:
+        """
+        Retrieve a single category object by primary key.
+        
+        Args:
+            pk: Category primary key.
+        
+        Returns:
+            Category: The category instance.
+        
+        Raises:
+            NotFound: If category does not exist.
+        """
+        try:
+            return self.get_queryset().get(pk=pk)
+        except Category.DoesNotExist:
+            raise NotFound('Category not found')
 
     def get_permissions(self) -> List[BasePermission]:
         """
@@ -114,7 +130,7 @@ class CategoryViewSet(ViewSet):
         Returns:
             Response: Category details with HTTP 200 status or HTTP 404 if not found.
         """
-        category: Category = get_object_or_404(self.get_queryset(), pk=pk)
+        category: Category = self.get_object(pk)
         serializer = CategorySerializer(category)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -168,7 +184,7 @@ class CategoryViewSet(ViewSet):
         Returns:
             Response: Updated category data with HTTP 200 status or appropriate error response.
         """
-        category: Category = get_object_or_404(self.get_queryset(), pk=pk)
+        category: Category = self.get_object(pk)
         
         serializer = CategoryUpdateSerializer(
             category,
@@ -285,6 +301,6 @@ class CategoryViewSet(ViewSet):
         Returns:
             Response: HTTP 204 No Content status on success or appropriate error response.
         """
-        category: Category = get_object_or_404(self.get_queryset(), pk=pk)
+        category: Category = self.get_object(pk)
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

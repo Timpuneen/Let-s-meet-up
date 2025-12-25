@@ -1,12 +1,12 @@
 from typing import List, Optional
 
 from django.db.models import Prefetch, QuerySet
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -47,6 +47,24 @@ class EventViewSet(ViewSet):
     
     serializer_class = EventSerializer
     queryset = Event.objects.all()
+    
+    def get_object(self, pk: int) -> Event:
+        """
+        Retrieve a single event object by primary key.
+        
+        Args:
+            pk: Event primary key.
+        
+        Returns:
+            Event: The event instance.
+        
+        Raises:
+            NotFound: If event does not exist.
+        """
+        try:
+            return Event.objects.get(pk=pk)
+        except Event.DoesNotExist:
+            raise NotFound('Event not found')
     
     def get_permissions(self) -> List[BasePermission]:
         """
@@ -139,7 +157,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: Event details (200) or not found (404).
         """
-        event = get_object_or_404(self._get_base_queryset(), pk=pk)
+        event = self.get_object(pk)
         serializer = EventSerializer(event)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -183,7 +201,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: Updated event data (200) or errors.
         """
-        event = get_object_or_404(Event.objects.all(), pk=pk)
+        event = self.get_object(pk)
         
         self.check_object_permissions(request, event)
         
@@ -272,7 +290,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: No content (204) or errors.
         """
-        event = get_object_or_404(Event.objects.all(), pk=pk)
+        event = self.get_object(pk)
         
         self.check_object_permissions(request, event)
         
@@ -303,7 +321,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: Success message (201) or error (400).
         """
-        event = get_object_or_404(Event.objects.all(), pk=pk)
+        event = self.get_object(pk)
         user = request.user
         
         if event.organizer == user:
@@ -358,7 +376,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: Success message (200) or error (400).
         """
-        event = get_object_or_404(Event.objects.all(), pk=pk)
+        event = self.get_object(pk)
         user = request.user
         
         try:
@@ -484,7 +502,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: List of comments (200) or errors.
         """
-        event = get_object_or_404(Event.objects.all(), pk=pk)
+        event = self.get_object(pk)
         
         comments = EventComment.objects.filter(event=event).select_related(
             'user', 'parent'
@@ -537,7 +555,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: List of photos (200) or errors.
         """
-        event = get_object_or_404(Event.objects.all(), pk=pk)
+        event = self.get_object(pk)
         
         photos = EventPhoto.objects.filter(event=event).select_related(
             'uploaded_by'
