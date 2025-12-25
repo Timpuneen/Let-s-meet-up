@@ -171,26 +171,14 @@ class EventViewSet(ViewSet):
         response_serializer = EventSerializer(event)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
-    @extend_schema(
-        tags=['Events'],
-        summary='Update event',
-        description='Update event fields. Only the organizer can update the event.',
-        request=EventUpdateSerializer,
-        responses={
-            status.HTTP_200_OK: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
-            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
-            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
-            status.HTTP_403_FORBIDDEN: OpenApiResponse(description='Not the organizer'),
-            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
-        },
-    )
-    def update(self, request: Request, pk: int) -> Response:
+    def _update_event(self, request: Request, pk: int, partial: bool) -> Response:
         """
-        Update an event.
+        Internal method to handle event updates.
         
         Args:
             request: The request object.
             pk: Event ID.
+            partial: Whether this is a partial update (PATCH) or full update (PUT).
         
         Returns:
             Response: Updated event data (200) or errors.
@@ -199,7 +187,6 @@ class EventViewSet(ViewSet):
         
         self.check_object_permissions(request, event)
         
-        partial = request.method == HTTP_METHOD_PATCH
         serializer = EventUpdateSerializer(
             event, 
             data=request.data, 
@@ -213,8 +200,34 @@ class EventViewSet(ViewSet):
     
     @extend_schema(
         tags=['Events'],
+        summary='Update event',
+        description='Full update of event fields (PUT). Only the organizer can update the event.',
+        request=EventUpdateSerializer,
+        responses={
+            status.HTTP_200_OK: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(description='Invalid input data'),
+            status.HTTP_401_UNAUTHORIZED: OpenApiResponse(description='Authentication required'),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(description='Not the organizer'),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(description='Event not found'),
+        },
+    )
+    def update(self, request: Request, pk: int) -> Response:
+        """
+        Full update of an event (PUT).
+        
+        Args:
+            request: The request object.
+            pk: Event ID.
+        
+        Returns:
+            Response: Updated event data (200) or errors.
+        """
+        return self._update_event(request, pk, partial=False)
+    
+    @extend_schema(
+        tags=['Events'],
         summary='Partial update event',
-        description='Partially update event fields. Only the organizer can update the event.',
+        description='Partial update of event fields (PATCH). Only the organizer can update the event.',
         request=EventUpdateSerializer,
         responses={
             status.HTTP_200_OK: OpenApiResponse(response=EventSerializer, description='Event updated successfully'),
@@ -226,7 +239,7 @@ class EventViewSet(ViewSet):
     )
     def partial_update(self, request: Request, pk: int) -> Response:
         """
-        Partially update an event.
+        Partial update of an event (PATCH).
         
         Args:
             request: The request object.
@@ -235,7 +248,7 @@ class EventViewSet(ViewSet):
         Returns:
             Response: Updated event data (200) or errors.
         """
-        return self.update(request, pk=pk)
+        return self._update_event(request, pk, partial=True)
     
     @extend_schema(
         tags=['Events'],

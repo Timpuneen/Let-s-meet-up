@@ -156,10 +156,35 @@ class CategoryViewSet(ViewSet):
         response_serializer = CategorySerializer(category)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
+    def _update_category(self, request: Request, pk: Optional[int], partial: bool) -> Response:
+        """
+        Internal method to handle category updates.
+        
+        Args:
+            request: The HTTP request object containing updated data.
+            pk: Category ID.
+            partial: Whether this is a partial update (PATCH) or full update (PUT).
+        
+        Returns:
+            Response: Updated category data with HTTP 200 status or appropriate error response.
+        """
+        category: Category = get_object_or_404(self.get_queryset(), pk=pk)
+        
+        serializer = CategoryUpdateSerializer(
+            category,
+            data=request.data,
+            partial=partial
+        )
+        serializer.is_valid(raise_exception=True)
+        category = serializer.save()
+        
+        response_serializer = CategorySerializer(category)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
     @extend_schema(
         tags=['Categories'],
         summary='Update category',
-        description='Update category fields. Admin authentication required.',
+        description='Full update of category fields (PUT). Admin authentication required.',
         request=CategoryUpdateSerializer,
         responses={
             status.HTTP_200_OK: OpenApiResponse(
@@ -182,7 +207,7 @@ class CategoryViewSet(ViewSet):
     )
     def update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
-        Update a category.
+        Full update of a category (PUT).
         
         Args:
             request: The HTTP request object containing updated data.
@@ -191,24 +216,12 @@ class CategoryViewSet(ViewSet):
         Returns:
             Response: Updated category data with HTTP 200 status or appropriate error response.
         """
-        category: Category = get_object_or_404(self.get_queryset(), pk=pk)
-        
-        partial: bool = request.method == 'PATCH'
-        serializer = CategoryUpdateSerializer(
-            category,
-            data=request.data,
-            partial=partial
-        )
-        serializer.is_valid(raise_exception=True)
-        category = serializer.save()
-        
-        response_serializer = CategorySerializer(category)
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
+        return self._update_category(request, pk, partial=False)
 
     @extend_schema(
         tags=['Categories'],
         summary='Partial update category',
-        description='Partially update category fields. Admin authentication required.',
+        description='Partial update of category fields (PATCH). Admin authentication required.',
         request=CategoryUpdateSerializer,
         responses={
             status.HTTP_200_OK: OpenApiResponse(
@@ -231,7 +244,7 @@ class CategoryViewSet(ViewSet):
     )
     def partial_update(self, request: Request, pk: Optional[int] = None) -> Response:
         """
-        Partially update a category.
+        Partial update of a category (PATCH).
         
         Args:
             request: The HTTP request object containing partial update data.
@@ -240,7 +253,7 @@ class CategoryViewSet(ViewSet):
         Returns:
             Response: Updated category data with HTTP 200 status or appropriate error response.
         """
-        return self.update(request, pk=pk)
+        return self._update_category(request, pk, partial=True)
 
     @extend_schema(
         tags=['Categories'],
