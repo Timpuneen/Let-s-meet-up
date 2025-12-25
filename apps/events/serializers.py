@@ -11,6 +11,7 @@ from rest_framework.serializers import (
 
 from apps.categories.models import Category
 from apps.categories.serializers import CategorySerializer
+from apps.geography.serializers import CitySerializer, CountrySerializer
 from apps.users.serializers import UserSerializer
 
 from .models import Event
@@ -30,9 +31,8 @@ class EventSerializer(ModelSerializer):
 
     organizer = UserSerializer(read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
-    country_name = SerializerMethodField()
-    city_name = SerializerMethodField()
-    category_names = SerializerMethodField()
+    country = CountrySerializer(read_only=True)
+    city = CitySerializer(read_only=True)
     participants_count = SerializerMethodField()
     is_full = SerializerMethodField()
     
@@ -41,47 +41,10 @@ class EventSerializer(ModelSerializer):
         fields = [
             'id', 'title', 'description', 'address', 'categories', 'date', 'status',
             'invitation_perm', 'max_participants', 'organizer',
-            'country', 'country_name', 'city', 'city_name',
-            'category_names', 'participants_count', 'is_full',
+            'country', 'city', 'participants_count', 'is_full',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'organizer', 'created_at', 'updated_at']
-    
-    def get_country_name(self, obj: Event) -> Optional[str]:
-        """
-        Get country name for the event.
-        
-        Args:
-            obj: Event instance.
-            
-        Returns:
-            str: Country name or None.
-        """
-        return obj.country.name if obj.country else None
-    
-    def get_city_name(self, obj: Event) -> Optional[str]:
-        """
-        Get city name for the event.
-        
-        Args:
-            obj: Event instance.
-            
-        Returns:
-            str: City name or None.
-        """
-        return obj.city.name if obj.city else None
-    
-    def get_category_names(self, obj: Event) -> List[str]:
-        """
-        Get list of category names for the event.
-        
-        Args:
-            obj: Event instance.
-            
-        Returns:
-            list: List of category names.
-        """
-        return [category.name for category in obj.categories.all()]
 
     def get_participants_count(self, obj: Event) -> int:
         """
