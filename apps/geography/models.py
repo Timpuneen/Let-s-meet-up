@@ -1,4 +1,9 @@
-from django.db import models
+from django.db.models import (
+    CharField,
+    ForeignKey,
+    Index,
+    CASCADE,
+)
 
 from apps.abstracts.models import AbstractTimestampedModel
 
@@ -17,13 +22,13 @@ class Country(AbstractTimestampedModel):
         created_at (datetime): Creation timestamp (from AbstractTimestampedModel).
     """
     
-    name = models.CharField(
+    name = CharField(
         max_length=COUNTRY_NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Country Name',
         help_text='Full name of the country',
     )
-    code = models.CharField(
+    code = CharField(
         max_length=COUNTRY_CODE_MAX_LENGTH,
         unique=True,
         verbose_name='Country Code',
@@ -36,8 +41,8 @@ class Country(AbstractTimestampedModel):
         verbose_name_plural = 'Countries'
         ordering = ['name']
         indexes = [
-            models.Index(fields=['code']),
-            models.Index(fields=['name']),
+            Index(fields=['code']),
+            Index(fields=['name']),
         ]
     
     def __str__(self) -> str:
@@ -69,14 +74,14 @@ class City(AbstractTimestampedModel):
         created_at (datetime): Creation timestamp (from AbstractTimestampedModel).
     """
     
-    name = models.CharField(
+    name = CharField(
         max_length=CITY_NAME_MAX_LENGTH,
         verbose_name='City Name',
         help_text='Name of the city',
     )
-    country = models.ForeignKey(
+    country = ForeignKey(
         Country,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='cities',
         verbose_name='Country',
         help_text='Country this city belongs to',
@@ -89,8 +94,8 @@ class City(AbstractTimestampedModel):
         ordering = ['country', 'name']
         unique_together = [['name', 'country']]
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['country', 'name']),
+            Index(fields=['name']),
+            Index(fields=['country', 'name']),
         ]
     
     def __str__(self) -> str:

@@ -1,7 +1,17 @@
 from typing import Any
 
 from django.conf import settings
-from django.db import models
+from django.db.models import (
+    CharField,
+    TextField,
+    DateTimeField,
+    IntegerField,
+    ForeignKey,
+    ManyToManyField,
+    Index,
+    CASCADE,
+    PROTECT,
+)
 
 from apps.abstracts.models import (
     AbstractSoftDeletableModel,
@@ -62,73 +72,73 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         updated_at (datetime): Last update timestamp (from AbstractTimestampedModel).
     """
     
-    title = models.CharField(
+    title = CharField(
         max_length=TITLE_MAX_LENGTH,
         verbose_name='Title',
         help_text='Event title',
     )
-    description = models.TextField(
+    description = TextField(
         verbose_name='Description',
         help_text='Detailed event description',
     )
-    address = models.CharField(
+    address = CharField(
         max_length=ADDRESS_MAX_LENGTH,
         verbose_name='Address',
         help_text='Physical address of the event venue',
         null=True,
         blank=True
     )
-    date = models.DateTimeField(
+    date = DateTimeField(
         verbose_name='Event Date and Time',
         help_text='When the event will take place',
     )
-    status = models.CharField(
+    status = CharField(
         max_length=STATUS_MAX_LENGTH,
         choices=EVENT_STATUS_CHOICES,
         default=EVENT_STATUS_PUBLISHED,
         verbose_name='Status',
         help_text='Current status of the event',
     )
-    invitation_perm = models.CharField(
+    invitation_perm = CharField(
         max_length=INVITATION_PERM_MAX_LENGTH,
         choices=INVITATION_PERM_CHOICES,
         default=INVITATION_PERM_PARTICIPANTS,
         verbose_name='Invitation Permission',
         help_text='Who can invite others to this event',
     )
-    max_participants = models.IntegerField(
+    max_participants = IntegerField(
         null=True,
         blank=True,
         verbose_name='Max Participants',
         help_text='Maximum number of participants (leave empty for unlimited)',
     )
     
-    organizer = models.ForeignKey(
+    organizer = ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='organized_events',
         verbose_name='Organizer',
         help_text='User who created and manages this event',
     )
-    country = models.ForeignKey(
+    country = ForeignKey(
         'geography.Country',
-        on_delete=models.PROTECT,
+        on_delete=PROTECT,
         related_name='events',
         verbose_name='Country',
         help_text='Country where the event takes place',
         null=True,
         blank=True
     )
-    city = models.ForeignKey(
+    city = ForeignKey(
         'geography.City',
-        on_delete=models.PROTECT,
+        on_delete=PROTECT,
         related_name='events',
         verbose_name='City',
         help_text='City where the event takes place',
         null=True,
         blank=True
     )
-    categories = models.ManyToManyField(
+    categories = ManyToManyField(
         'categories.Category',
         through='categories.EventCategory',
         related_name='events',
@@ -144,11 +154,11 @@ class Event(AbstractSoftDeletableModel, AbstractTimestampedModel):
         verbose_name_plural = 'Events'
         ordering = ['-date']
         indexes = [
-            models.Index(fields=['date']),
-            models.Index(fields=['status', 'date']),
-            models.Index(fields=['organizer', 'date']),
-            models.Index(fields=['country', 'city']),
-            models.Index(fields=['is_deleted', 'status']),
+            Index(fields=['date']),
+            Index(fields=['status', 'date']),
+            Index(fields=['organizer', 'date']),
+            Index(fields=['country', 'city']),
+            Index(fields=['is_deleted', 'status']),
         ]
     
     def __str__(self) -> str:

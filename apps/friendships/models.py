@@ -2,8 +2,14 @@ from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import (
+    ForeignKey,
+    CharField,
+    Index,
+    Q,
+    QuerySet,
+    CASCADE,
+)
 
 from apps.abstracts.models import AbstractTimestampedModel
 
@@ -36,21 +42,21 @@ class Friendship(AbstractTimestampedModel):
         updated_at (datetime): When the friendship was last updated (from AbstractTimestampedModel).
     """
     
-    sender = models.ForeignKey(
+    sender = ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='sent_friendships',
         verbose_name='Sender',
         help_text='User who initiated the friendship request',
     )
-    receiver = models.ForeignKey(
+    receiver = ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='received_friendships',
         verbose_name='Receiver',
         help_text='User who received the friendship request',
     )
-    status = models.CharField(
+    status = CharField(
         max_length=FRIENDSHIP_STATUS_MAX_LENGTH,
         choices=FRIENDSHIP_STATUS_CHOICES,
         default=FRIENDSHIP_STATUS_PENDING,
@@ -65,9 +71,9 @@ class Friendship(AbstractTimestampedModel):
         ordering = ['-created_at']
         unique_together = [['sender', 'receiver']]
         indexes = [
-            models.Index(fields=['sender', 'status']),
-            models.Index(fields=['receiver', 'status']),
-            models.Index(fields=['status']),
+            Index(fields=['sender', 'status']),
+            Index(fields=['receiver', 'status']),
+            Index(fields=['status']),
         ]
     
     def __str__(self) -> str:

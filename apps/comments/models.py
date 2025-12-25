@@ -2,8 +2,13 @@ from typing import Any, List
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
-from django.db.models import QuerySet
+from django.db.models import (
+    ForeignKey,
+    TextField,
+    Index,
+    CASCADE,
+    QuerySet,
+)
 
 from apps.abstracts.models import (
     AbstractSoftDeletableModel,
@@ -32,30 +37,30 @@ class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
         updated_at (datetime): When comment was last edited (from AbstractTimestampedModel).
     """
     
-    event = models.ForeignKey(
+    event = ForeignKey(
         'events.Event',
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='comments',
         verbose_name='Event',
         help_text='Event this comment belongs to',
     )
-    user = models.ForeignKey(
+    user = ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         related_name='event_comments',
         verbose_name='User',
         help_text='User who posted this comment',
     )
-    parent = models.ForeignKey(
+    parent = ForeignKey(
         'self',
-        on_delete=models.CASCADE,
+        on_delete=CASCADE,
         null=True,
         blank=True,
         related_name='replies',
         verbose_name='Parent Comment',
         help_text='Parent comment if this is a reply',
     )
-    content = models.TextField(
+    content = TextField(
         verbose_name='Content',
         help_text='The comment text',
     )
@@ -68,10 +73,10 @@ class EventComment(AbstractTimestampedModel, AbstractSoftDeletableModel):
         verbose_name_plural = 'Event Comments'
         ordering = ['created_at']
         indexes = [
-            models.Index(fields=['event', 'created_at']),
-            models.Index(fields=['user']),
-            models.Index(fields=['parent']),
-            models.Index(fields=['created_at']),
+            Index(fields=['event', 'created_at']),
+            Index(fields=['user']),
+            Index(fields=['parent']),
+            Index(fields=['created_at']),
         ]
     
     def __str__(self) -> str:
